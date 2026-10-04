@@ -17,5 +17,8 @@
   "bugs": {
     "url": "https://github.com/DaviAravechiaFMP/sistemaDeDoacoesBack/issues"
   },
-  "homepage": "https://github.com/DaviAravechiaFMP/sistemaDeDoacoesBack#readme"
+  "homepage": "https://github.com/DaviAravechiaFMP/sistemaDeDoacoesBack#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
 }
