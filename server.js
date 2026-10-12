@@ -30,8 +30,8 @@ function validarDoacao(req, res, next) {
   if (!item) {
     return res.status(400).json({ mensagem: "O item é obrigatório" });
   }
-  if (!quantidade) {
-    return res.status(400).json({ mensagem: "A quantidade é obrigatória" });
+  if (quantidade === undefined || quantidade === null || typeof quantidade !== "number" || quantidade <= 0) {
+  return res.status(400).json({ mensagem: "A quantidade deve ser um número maior que 0" });
   }
   next(); // dados ok, pode continuar
 }
