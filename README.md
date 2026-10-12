@@ -1,27 +1,42 @@
-# Sistema de Gestão de Doações FMP - API Back-end
+# 🤝 Sistema de Gestão de Doações FMP — API Back-end (v2)
 
-API Back-end do Projeto Integrador, desenvolvida com **Node.js** e **Express**, criada para fornecer e receber dados do sistema de gestão de doações desenvolvido pelo grupo.
+API REST do **Projeto Integrador**, desenvolvida com **Node.js** e **Express**, responsável por fornecer e receber os dados do sistema de gestão de doações criado pelo grupo.
 
-> **Etapa atual:** início da API Back-end do Projeto Integrador.
->
-> Nesta etapa, o objetivo é estruturar o servidor, implementar os primeiros endpoints HTTP e estabelecer um fluxo de desenvolvimento colaborativo utilizando Git e GitHub. A API ainda não representa a versão final do sistema.
+> **Etapa atual (v2):** CRUD completo em memória, middlewares de log e validação, variáveis de ambiente com `.env`, reinício automático com Nodemon e status codes HTTP corretos.
+
+---
+
+## 📑 Sumário
+
+- [Sobre o projeto](#-sobre-o-projeto)
+- [Integrantes do grupo](#-integrantes-do-grupo)
+- [O que mudou da v1 para a v2](#-o-que-mudou-da-v1-para-a-v2)
+- [Tecnologias utilizadas](#-tecnologias-utilizadas)
+- [Arquitetura](#-arquitetura)
+- [Como executar](#-como-executar)
+- [Estrutura do projeto](#-estrutura-do-projeto)
+- [Endpoints](#-endpoints)
+- [Middlewares](#-middlewares)
+- [Testes no Postman](#-testes-no-postman)
+- [Limitações conhecidas](#-limitações-conhecidas)
+- [Próximos passos](#-próximos-passos)
 
 ---
 
 ## 📌 Sobre o projeto
 
-O **Sistema de Gestão de Doações FMP** tem como finalidade organizar informações relacionadas a doações, permitindo que os dados sejam futuramente utilizados pelo front-end do projeto integrador.
+O **Sistema de Gestão de Doações FMP** organiza informações sobre doações (quem doou, o que foi doado, quantidade e situação), permitindo que esses dados sejam consumidos pelo front-end do Projeto Integrador.
 
-Nesta primeira etapa do Back-end, foi criada uma API REST inicial capaz de:
+Esta API oferece:
 
-- verificar se o servidor está funcionando;
-- listar doações cadastradas;
-- buscar uma doação específica pelo seu ID;
-- cadastrar novas doações;
-- retornar códigos de status HTTP de acordo com o resultado de cada operação;
-- disponibilizar uma estrutura inicial para futuras integrações com banco de dados e outras funcionalidades.
+- Rota de verificação do servidor;
+- CRUD completo de doações (listar, buscar por ID, cadastrar, atualizar e remover);
+- Middlewares globais de **log** e de **validação** de dados;
+- Respostas com status codes apropriados (`200`, `201`, `400`, `404`);
+- Configurações protegidas em arquivo `.env`;
+- Ambiente de desenvolvimento com reinício automático (Nodemon).
 
-Atualmente, os registros utilizados pela API são mantidos **em memória**, dentro do próprio servidor. Portanto, os dados não são persistidos após o encerramento da aplicação.
+> ⚠️ Os dados ficam **em memória** (um array dentro do servidor). Ao reiniciar ou encerrar a aplicação, tudo volta ao estado inicial. O banco de dados real entra nas próximas etapas.
 
 ---
 
@@ -36,647 +51,386 @@ Atualmente, os registros utilizados pela API são mantidos **em memória**, dent
 
 ---
 
+## 🔄 O que mudou da v1 para a v2
+
+| Item | v1 | v2 |
+|---|---|---|
+| Execução | `node server.js` manual | `npm run dev` com **Nodemon** (reinicia ao salvar) |
+| Configuração | Porta fixa no código | Porta em **`.env`** (`process.env.PORT`) |
+| Segurança do repositório | — | **`.gitignore`** protege `.env` e `node_modules` |
+| Rotas | Listar e cadastrar | **CRUD completo**, incluindo rotas com parâmetro (`/:id`) |
+| Validação | Dentro das rotas | **Middleware** `validarDoacao` (POST e PUT) |
+| Observabilidade | — | **Middleware de log** no terminal |
+| Respostas | Sem padrão definido | Status codes corretos: `200`, `201`, `400`, `404` |
+| Rotas inexistentes | Resposta padrão do Express | Middleware final com JSON `404` |
+
+---
+
 ## 🧰 Tecnologias utilizadas
 
 | Tecnologia | Função no projeto |
 |---|---|
-| **Node.js** | Ambiente responsável pela execução do JavaScript no Back-end |
-| **Express** | Framework utilizado para criação do servidor e das rotas HTTP |
-| **NPM** | Gerenciamento do projeto e das dependências |
-| **JavaScript** | Linguagem utilizada na implementação da API |
-| **Git** | Controle de versão do código |
-| **GitHub** | Hospedagem do repositório e colaboração entre os integrantes |
+| **Node.js** | Executa o JavaScript no back-end |
+| **Express** (v5) | Criação do servidor e das rotas HTTP |
+| **Dotenv** | Leitura das variáveis de ambiente do `.env` |
+| **Nodemon** | Reinício automático do servidor em desenvolvimento |
+| **NPM** | Gerenciamento de dependências e scripts |
+| **Git / GitHub** | Controle de versão e colaboração do grupo |
+| **Postman** | Testes manuais das rotas |
 
 ---
 
-## 🏗️ Arquitetura utilizada
+## 🏗️ Arquitetura
 
-A aplicação segue o modelo básico de **arquitetura cliente-servidor**.
+A aplicação segue o modelo **cliente-servidor**. Toda requisição passa pelos middlewares antes de chegar à rota.
 
 ```mermaid
 flowchart LR
-    A[Cliente / Front-end] -->|HTTP Request| B[API Express]
-    B -->|Processamento| C[Regras da aplicação]
-    C --> D[(Dados em memória)]
-    D --> C
-    C -->|HTTP Response + JSON| B
-    B --> A
+    A[Cliente / Postman / Front-end] -->|HTTP Request| B[express.json]
+    B --> C[registrarLog]
+    C --> D{Rota POST ou PUT?}
+    D -->|Sim| E[validarDoacao]
+    D -->|Não| F[Rota Express]
+    E -->|Dados válidos| F
+    E -->|Dados inválidos| X[400 Bad Request]
+    F --> G[(Array em memória)]
+    G --> F
+    F -->|HTTP Response + JSON| A
 ```
 
-### Fluxo básico
+### Fluxo de uma requisição
 
-1. O cliente realiza uma requisição HTTP para um endpoint da API.
-2. O Express identifica a rota e o método HTTP utilizado.
-3. O servidor processa a requisição.
-4. A aplicação consulta ou altera os dados mantidos em memória.
-5. O servidor devolve uma resposta HTTP, normalmente no formato JSON.
+1. O cliente envia uma requisição HTTP para um endpoint.
+2. `express.json()` converte o corpo da requisição em objeto JavaScript (`req.body`).
+3. `registrarLog` imprime no terminal o horário, o método e a URL.
+4. Em **POST** e **PUT**, `validarDoacao` confere os dados enviados. Se algo estiver errado, responde `400` e a rota nem é executada.
+5. A rota consulta ou altera o array em memória.
+6. O servidor devolve o status code correto e o JSON de resposta.
 
-Essa estrutura permite que o front-end e o back-end trabalhem separados, comunicando-se por meio de requisições HTTP.
+### Verbos HTTP utilizados
 
----
-
-## 🌐 HTTP e endpoints
-
-A API utiliza os principais conceitos do protocolo HTTP para definir as operações disponíveis.
-
-| Verbo | Utilização geral | Utilização nesta etapa |
+| Verbo | Uso geral | Uso nesta API |
 |---|---|---|
-| **GET** | Consultar dados | Listar e buscar doações |
-| **POST** | Criar/enviar dados | Cadastrar uma nova doação |
-| **PUT** | Atualizar dados | Ainda não implementado |
-| **DELETE** | Remover dados | Ainda não implementado |
-
-### O que é um endpoint?
-
-Um endpoint é um endereço específico da API utilizado para realizar uma determinada operação.
-
-Exemplo:
-
-```text
-GET /api/doacoes
-```
-
-Nesse caso:
-
-- `GET` representa o método HTTP;
-- `/api/doacoes` representa o caminho do endpoint;
-- o servidor recebe a requisição e retorna os dados correspondentes.
+| `GET` | Consultar dados | Listar todas as doações e buscar uma por ID |
+| `POST` | Criar dados | Cadastrar nova doação |
+| `PUT` | Atualizar dados | Atualizar uma doação existente |
+| `DELETE` | Remover dados | Remover uma doação pelo ID |
 
 ---
 
-# 🚀 Como executar o projeto
+## 🚀 Como executar
 
-## Pré-requisitos
+### Pré-requisitos
 
-É necessário ter instalado:
+- [Node.js](https://nodejs.org/) **18 ou superior**
+- NPM (já vem com o Node.js)
+- Git
 
-- **Node.js**
-- **NPM**, normalmente instalado junto com o Node.js
-- **Git**, caso o projeto seja obtido pelo repositório
-
----
-
-## 1. Clonar o repositório
+### 1. Clonar o repositório
 
 ```bash
 git clone https://github.com/DaviAravechiaFMP/sistemaDeDoacoesBack.git
-```
-
-Depois, entre na pasta do projeto:
-
-```bash
 cd sistemaDeDoacoesBack
 ```
 
----
+### 2. Criar o arquivo `.env`
 
-## 2. Instalar as dependências
+Na raiz do projeto, crie um arquivo chamado `.env` com:
 
-Execute:
+```env
+PORT=3000
+```
+
+> O `.env` está no `.gitignore` e **não deve ser enviado ao GitHub**. Se `PORT` não for definida, a API usa `3000` por padrão.
+
+### 3. Instalar as dependências
 
 ```bash
 npm install
 ```
 
-Esse comando instala as dependências especificadas no `package.json`, incluindo o Express.
+### 4. Iniciar o servidor
 
----
+**Desenvolvimento** (com Nodemon, reinicia ao salvar):
 
-## 3. Iniciar o servidor
+```bash
+npm run dev
+```
 
-Execute:
+**Produção** (Node puro):
 
 ```bash
 npm start
 ```
 
-O servidor será iniciado na porta **3000**.
-
 Mensagem esperada no terminal:
 
 ```text
-Servidor rodando em http://localhost:3000
+Servidor rodando na porta 3000
 ```
 
-Com o servidor ativo, a API poderá ser acessada por:
+A API ficará disponível em: **http://localhost:3000**
 
-```text
-http://localhost:3000
-```
+### Scripts disponíveis
+
+| Comando | O que faz |
+|---|---|
+| `npm start` | Executa `node server.js` |
+| `npm run dev` | Executa `nodemon server.js` |
 
 ---
 
-# 📁 Estrutura atual do projeto
+## 📁 Estrutura do projeto
 
 ```text
 sistemaDeDoacoesBack/
 ├── node_modules/
-├── package.json
+├── .env              <- Variáveis de ambiente (local, não vai ao GitHub)
+├── .gitignore        <- Protege .env e node_modules
+├── package.json      <- Scripts start/dev e dependências
 ├── package-lock.json
-├── README.md
-└── server.js
+├── README.md         <- Documentação da API
+└── server.js         <- Servidor Express, middlewares e rotas
 ```
-
-### Principais arquivos
-
-**`server.js`**
-
-Arquivo principal da aplicação. É responsável por:
-
-- importar o Express;
-- criar a aplicação;
-- habilitar o recebimento de JSON;
-- armazenar temporariamente as doações;
-- definir os endpoints;
-- realizar validações básicas;
-- retornar os códigos de status HTTP;
-- iniciar o servidor na porta 3000.
-
-**`package.json`**
-
-Arquivo de configuração do projeto Node.js, contendo informações do projeto, scripts de execução e dependências.
-
-**`README.md`**
-
-Documentação da API, contendo instruções de execução, endpoints e exemplos de utilização.
 
 ---
 
-# 🔌 Endpoints disponíveis
+## 🔌 Endpoints
 
-## Visão geral
+### Visão geral
 
-| Método | Endpoint | Descrição | Status esperados |
+| Método | Endpoint | Descrição | Status possíveis |
 |---|---|---|---|
-| `GET` | `/` | Verifica se a API está funcionando | `200` |
+| `GET` | `/` | Verifica se a API está no ar | `200` |
 | `GET` | `/api/doacoes` | Lista todas as doações | `200` |
 | `GET` | `/api/doacoes/:id` | Busca uma doação pelo ID | `200` / `404` |
 | `POST` | `/api/doacoes` | Cadastra uma nova doação | `201` / `400` |
+| `PUT` | `/api/doacoes/:id` | Atualiza uma doação existente | `200` / `400` / `404` |
+| `DELETE` | `/api/doacoes/:id` | Remove uma doação | `200` / `404` |
 
----
+### Modelo de dados
 
-## 1. GET `/`
+| Campo | Tipo | Descrição |
+|---|---|---|
+| `id` | Número | Gerado automaticamente pela API |
+| `doador` | Texto | Nome de quem doou |
+| `item` | Texto | O que foi doado |
+| `quantidade` | Número | Quantidade doada (maior que 0) |
+| `status` | Texto | `"pendente"` ao cadastrar (a API não altera esse campo no `PUT`) |
 
-### Finalidade
-
-Endpoint utilizado para verificar se o servidor está ativo e respondendo às requisições.
-
-### Requisição
-
-```http
-GET /
-```
-
-### Resposta de sucesso
-
-**Status:** `200 OK`
-
-```json
-{
-  "mensagem": "API do Sistema de Doações funcionando"
-}
-```
-
----
-
-## 2. GET `/api/doacoes`
-
-### Finalidade
-
-Retorna todas as doações atualmente armazenadas em memória.
-
-### Requisição
-
-```http
-GET /api/doacoes
-```
-
-### Resposta de sucesso
-
-**Status:** `200 OK`
-
-Exemplo:
+Dados iniciais carregados ao subir o servidor:
 
 ```json
 [
-  {
-    "id": 1,
-    "doador": "Maria Silva",
-    "item": "Cesta básica",
-    "quantidade": 2,
-    "status": "recebida"
-  },
-  {
-    "id": 2,
-    "doador": "João Souza",
-    "item": "Cobertor",
-    "quantidade": 5,
-    "status": "pendente"
-  }
+  { "id": 1, "doador": "Maria Silva", "item": "Cesta básica", "quantidade": 2, "status": "recebida" },
+  { "id": 2, "doador": "João Souza", "item": "Cobertor", "quantidade": 5, "status": "pendente" }
 ]
 ```
 
 ---
 
-## 3. GET `/api/doacoes/:id`
+### 1. `GET /`
 
-### Finalidade
+Verifica se a API está ativa.
 
-Busca uma única doação a partir do seu identificador (`id`).
-
-### Parâmetro de rota
-
-| Parâmetro | Tipo | Descrição |
-|---|---|---|
-| `id` | Número | Identificador da doação que será buscada |
-
-### Exemplo de requisição
-
-```http
-GET /api/doacoes/1
-```
-
-### Resposta quando a doação existe
-
-**Status:** `200 OK`
+**200 OK**
 
 ```json
-{
-  "id": 1,
-  "doador": "Maria Silva",
-  "item": "Cesta básica",
-  "quantidade": 2,
-  "status": "recebida"
-}
+{ "mensagem": "API do Sistema de Doações funcionando" }
 ```
 
-### Resposta quando a doação não existe
+### 2. `GET /api/doacoes`
 
-**Status:** `404 Not Found`
+Retorna todas as doações armazenadas.
+
+**200 OK**
 
 ```json
-{
-  "erro": "Doação não encontrada"
-}
+[
+  { "id": 1, "doador": "Maria Silva", "item": "Cesta básica", "quantidade": 2, "status": "recebida" },
+  { "id": 2, "doador": "João Souza", "item": "Cobertor", "quantidade": 5, "status": "pendente" }
+]
 ```
 
----
+### 3. `GET /api/doacoes/:id`
 
-## 4. POST `/api/doacoes`
+Busca uma doação pelo ID (parâmetro de rota).
 
-### Finalidade
+**200 OK**
 
-Cria e adiciona uma nova doação à lista mantida em memória.
-
-### Requisição
-
-```http
-POST /api/doacoes
-Content-Type: application/json
+```json
+{ "id": 1, "doador": "Maria Silva", "item": "Cesta básica", "quantidade": 2, "status": "recebida" }
 ```
 
-### Corpo esperado
+**404 Not Found**
 
-O corpo da requisição deve possuir:
+```json
+{ "mensagem": "Doação não encontrada" }
+```
 
-| Campo | Tipo esperado | Obrigatório | Regra |
+### 4. `POST /api/doacoes`
+
+Cadastra uma nova doação. O `id` é o **maior ID existente + 1** e o `status` inicial é `"pendente"`.
+
+**Corpo da requisição (JSON)**
+
+| Campo | Tipo | Obrigatório | Regra |
 |---|---|---|---|
-| `doador` | Texto | Sim | Deve ser informado |
-| `item` | Texto | Sim | Deve ser informado |
-| `quantidade` | Número | Sim | Deve ser maior que `0` |
-
-### Exemplo de corpo
+| `doador` | Texto | Sim | Não pode ser vazio |
+| `item` | Texto | Sim | Não pode ser vazio |
+| `quantidade` | Número | Sim | Deve ser do tipo número e maior que 0 |
 
 ```json
-{
-  "doador": "Ana Costa",
-  "item": "Agasalho",
-  "quantidade": 3
-}
+{ "doador": "Ana Costa", "item": "Agasalho", "quantidade": 3 }
 ```
 
-### Resposta de sucesso
-
-**Status:** `201 Created`
-
-Exemplo:
+**201 Created**
 
 ```json
-{
-  "id": 3,
-  "doador": "Ana Costa",
-  "item": "Agasalho",
-  "quantidade": 3,
-  "status": "pendente"
-}
+{ "id": 3, "doador": "Ana Costa", "item": "Agasalho", "quantidade": 3, "status": "pendente" }
 ```
 
-### Resposta para dados inválidos
-
-**Status:** `400 Bad Request`
-
-Exemplo:
+**400 Bad Request** (exemplo)
 
 ```json
-{
-  "erro": "Informe um doador, item e uma quantidade válida (maior que 0)."
-}
+{ "mensagem": "A quantidade deve ser um número maior que 0" }
 ```
 
----
+### 5. `PUT /api/doacoes/:id`
 
-# 📊 Códigos de status HTTP utilizados
+Atualiza `doador`, `item` e `quantidade` de uma doação existente. Usa as mesmas regras de validação do `POST`.
 
-A API utiliza os códigos de status para indicar o resultado do processamento da requisição.
-
-| Código | Nome | Utilização no projeto |
-|---|---|---|
-| `200` | OK | Requisição realizada com sucesso |
-| `201` | Created | Nova doação criada com sucesso |
-| `400` | Bad Request | Dados enviados no POST são inválidos |
-| `404` | Not Found | Doação ou rota solicitada não foi encontrada |
-
-### Exemplo de interpretação
-
-```text
-GET /api/doacoes/1  → 200
-GET /api/doacoes/999 → 404
-POST /api/doacoes válido → 201
-POST /api/doacoes inválido → 400
-```
-
----
-
-# 🧪 Exemplos de testes
-
-Os endpoints podem ser testados pelo navegador, Postman ou outra ferramenta capaz de realizar requisições HTTP.
-
-## Teste 1 — Verificar a API
-
-Acesse:
-
-```text
-http://localhost:3000/
-```
-
-Resultado esperado: resposta JSON com a mensagem de funcionamento da API.
-
-## Teste 2 — Listar doações
-
-Acesse:
-
-```text
-http://localhost:3000/api/doacoes
-```
-
-Resultado esperado: lista de doações em formato JSON.
-
-## Teste 3 — Buscar uma doação existente
-
-Acesse:
-
-```text
-http://localhost:3000/api/doacoes/1
-```
-
-Resultado esperado: uma doação específica com status `200`.
-
-## Teste 4 — Buscar uma doação inexistente
-
-Acesse:
-
-```text
-http://localhost:3000/api/doacoes/999
-```
-
-Resultado esperado: erro em JSON com status `404`.
-
-## Teste 5 — Criar uma doação
-
-No Postman, selecione:
-
-```text
-POST http://localhost:3000/api/doacoes
-```
-
-Em **Body → raw → JSON**, utilize:
+**Corpo da requisição (JSON)**
 
 ```json
-{
-  "doador": "Ana Costa",
-  "item": "Agasalho",
-  "quantidade": 3
-}
+{ "doador": "Maria Silva", "item": "Cesta básica completa", "quantidade": 4 }
 ```
 
-Resultado esperado: nova doação criada com status `201`.
-
----
-
-# ✅ Validações implementadas no POST
-
-Antes de cadastrar uma doação, a API verifica se:
-
-- o campo `doador` foi informado;
-- o campo `item` foi informado;
-- o campo `quantidade` foi informado;
-- a quantidade é maior que zero.
-
-Quando alguma dessas condições não é atendida, a API interrompe o cadastro e retorna:
-
-```http
-400 Bad Request
-```
-
-com uma mensagem de erro em JSON.
-
----
-
-# 💾 Armazenamento dos dados
-
-Nesta versão, as doações são armazenadas em uma estrutura de dados **em memória** no arquivo `server.js`.
-
-Isso significa que:
-
-- os dados podem ser consultados enquanto o servidor estiver executando;
-- novas doações podem ser adicionadas durante a execução;
-- os dados não são persistidos em um banco de dados;
-- ao reiniciar o servidor, os dados cadastrados anteriormente deixam de existir.
-
-Essa implementação é intencional para a etapa inicial do desenvolvimento. A integração com banco de dados poderá ser realizada nas próximas etapas do Projeto Integrador.
-
----
-
-# 🔄 Funcionamento do cadastro de uma doação
-
-O fluxo simplificado do endpoint `POST /api/doacoes` é:
-
-```text
-Cliente
-   │
-   │ POST /api/doacoes
-   │ + JSON
-   ▼
-Express
-   │
-   │ Validação dos campos
-   ▼
-Dados válidos?
-   ├── Não ──► 400 Bad Request
-   │
-   └── Sim
-        │
-        ▼
-   Geração do ID
-        │
-        ▼
-   Cadastro em memória
-        │
-        ▼
-   201 Created
-```
-
----
-
-# 🧩 Organização das rotas
-
-As rotas foram organizadas seguindo o recurso principal da aplicação:
-
-```text
-/api/doacoes
-```
-
-A partir desse recurso, foram implementadas operações de consulta e criação:
-
-```text
-GET  /api/doacoes
-GET  /api/doacoes/:id
-POST /api/doacoes
-```
-
-Essa organização facilita a evolução futura da API para novas operações, como atualização e exclusão de registros.
-
----
-
-# 🔐 Tratamento de rotas inexistentes
-
-Além dos endpoints principais, a aplicação possui um tratamento para requisições direcionadas a caminhos que não foram definidos.
-
-Exemplo:
-
-```http
-GET /api/rota-que-nao-existe
-```
-
-Resposta:
-
-**Status:** `404 Not Found`
+**200 OK**
 
 ```json
-{
-  "erro": "Rota não encontrada"
-}
+{ "id": 1, "doador": "Maria Silva", "item": "Cesta básica completa", "quantidade": 4, "status": "recebida" }
 ```
 
----
+**400 Bad Request**: corpo inválido (mesmas mensagens do `POST`).
 
-# 🌱 Evolução prevista do projeto
+**404 Not Found**
 
-Como esta é a etapa inicial do Back-end, novas funcionalidades poderão ser adicionadas posteriormente. Entre as possibilidades de evolução estão:
-
-- integração com banco de dados;
-- persistência das doações;
-- atualização de registros com `PUT`;
-- remoção de registros com `DELETE`;
-- novas validações de entrada;
-- integração completa com o front-end;
-- criação de novos recursos relacionados ao sistema de doações.
-
-> Essas funcionalidades **não fazem parte da implementação desta etapa** e são apresentadas apenas como possíveis evoluções do projeto.
-
----
-
-# 🌿 Versionamento e colaboração
-
-O projeto utiliza **Git e GitHub** para controle de versão e desenvolvimento colaborativo.
-
-A colaboração permite registrar o histórico das alterações e identificar as contribuições de cada integrante do grupo.
-
-## Fluxo básico de contribuição
-
-```bash
-git pull
-git add .
-git commit -m "Descrição da alteração"
-git push
+```json
+{ "mensagem": "Doação não encontrada" }
 ```
 
-Antes do commit, cada integrante deve utilizar sua própria identidade configurada no Git para que sua contribuição apareça corretamente no histórico do repositório.
+### 6. `DELETE /api/doacoes/:id`
 
-### Regra da atividade
+Remove uma doação pelo ID.
 
-Cada integrante do grupo deve realizar **pelo menos um commit com a própria conta do GitHub**, de modo que os nomes dos integrantes possam ser identificados no histórico do projeto.
+**200 OK**
 
----
+```json
+{ "mensagem": "Doação removida com sucesso" }
+```
 
-# 📦 Repositório
+**404 Not Found**
 
-Repositório público do projeto:
+```json
+{ "mensagem": "Doação não encontrada" }
+```
 
-**https://github.com/DaviAravechiaFMP/sistemaDeDoacoesBack**
+### Rotas inexistentes
 
----
+Qualquer rota que não exista retorna:
 
-# 📚 Relação com os conteúdos estudados
+**404 Not Found**
 
-Esta etapa aplica os conceitos estudados na introdução ao Back-end:
+```json
+{ "mensagem": "Rota não encontrada" }
+```
 
-| Conteúdo | Aplicação no projeto |
+### Mensagens de erro de validação (400)
+
+| Situação | Mensagem retornada |
 |---|---|
-| Back-end | Servidor responsável pelo processamento das requisições |
-| Cliente-servidor | Comunicação entre cliente e API |
-| HTTP | Protocolo utilizado na comunicação |
-| GET | Consulta das doações |
-| POST | Cadastro de novas doações |
-| Endpoints | Endereços das operações da API |
-| Node.js | Execução do JavaScript no servidor |
-| Express | Criação do servidor e definição das rotas |
-| NPM | Instalação e gerenciamento das dependências |
-| Status codes | Indicação do resultado das requisições |
-| JSON | Formato utilizado nas respostas e no corpo do POST |
-| Git/GitHub | Versionamento e colaboração |
+| Corpo da requisição ausente | `O corpo da requisição não pode estar vazio` |
+| `doador` ausente ou vazio | `O doador é obrigatório` |
+| `item` ausente ou vazio | `O item é obrigatório` |
+| `quantidade` ausente, não numérica ou ≤ 0 | `A quantidade deve ser um número maior que 0` |
 
 ---
 
-# 📝 Status atual
+## 🛡️ Middlewares
 
-**API inicial do Projeto Integrador — em desenvolvimento.**
+| Middleware | Escopo | Função |
+|---|---|---|
+| `express.json()` | Global | Converte o corpo da requisição em JSON (sem ele, `req.body` fica `undefined`) |
+| `registrarLog` | Global | Imprime no terminal horário, método HTTP e URL de cada requisição |
+| `validarDoacao` | `POST` e `PUT` | Garante que `doador`, `item` e `quantidade` (número > 0) foram enviados corretamente |
+| Fallback 404 | Final | Captura qualquer rota inexistente e responde `404` em JSON |
 
-### Implementado nesta etapa
+Exemplo de saída do log no terminal:
 
-- [x] Estrutura inicial Node.js/NPM
-- [x] Express configurado
-- [x] Servidor HTTP na porta 3000
-- [x] Rota de verificação da API
-- [x] `GET /api/doacoes`
-- [x] `GET /api/doacoes/:id`
-- [x] `POST /api/doacoes`
-- [x] Status codes `200`, `201`, `400` e `404`
-- [x] Validação básica dos dados recebidos no POST
-- [x] Tratamento de rota inexistente
-- [x] Documentação inicial dos endpoints
-- [x] Versionamento utilizando Git e GitHub
+```text
+[14:32:10] GET /api/doacoes
+[14:32:25] POST /api/doacoes
+```
 
-### Ainda não implementado nesta etapa
-
-- [ ] Banco de dados persistente
-- [ ] `PUT`
-- [ ] `DELETE`
-- [ ] Autenticação e autorização
-- [ ] Integração completa com todas as funcionalidades do front-end
+> **Ordem importa:** os middlewares são registrados **antes** das rotas, e o fallback `404` fica **por último**. Todo middleware chama `next()` para liberar a requisição.
 
 ---
 
-## 📄 Observação sobre o projeto
+## 📊 Testes no Postman
 
-Este é um projeto acadêmico desenvolvido para o **Projeto Integrador da FMP**. Até o momento, o projeto não define uma licença de software específica.
+Configure o corpo das requisições `POST` e `PUT` como **Body → raw → JSON**.
+
+| # | Método | URL | Body (JSON) | Resposta esperada |
+|---|---|---|---|---|
+| 1 | `GET` | `http://localhost:3000/api/doacoes` | — | `200 OK` + lista completa |
+| 2 | `GET` | `http://localhost:3000/api/doacoes/1` | — | `200 OK` + doação de id 1 |
+| 3 | `GET` | `http://localhost:3000/api/doacoes/999` | — | `404 Not Found` |
+| 4 | `POST` | `http://localhost:3000/api/doacoes` | `{"doador":"Ana","item":"Agasalho","quantidade":3}` | `201 Created` + objeto criado |
+| 5 | `POST` | `http://localhost:3000/api/doacoes` | `{}` ou sem campo obrigatório | `400 Bad Request` (middleware) |
+| 6 | `PUT` | `http://localhost:3000/api/doacoes/1` | `{"doador":"Maria","item":"Cesta Padrão","quantidade":5}` | `200 OK` + objeto atualizado |
+| 7 | `DELETE` | `http://localhost:3000/api/doacoes/1` | — | `200 OK` + mensagem de remoção |
+
+> O navegador só faz requisições `GET`. Use o Postman para `POST`, `PUT` e `DELETE`, e acompanhe o terminal para ver o middleware de log funcionando.
+
+---
+
+## ⚠️ Limitações conhecidas
+
+- **Sem persistência:** os dados vivem em memória e são perdidos ao reiniciar o servidor (inclusive a cada alteração salva no modo `npm run dev`).
+- **Validação antes da busca no `PUT`:** como `validarDoacao` roda antes da rota, um `PUT` com corpo inválido em um ID inexistente retorna `400` (e não `404`).
+- **Sem autenticação:** qualquer cliente pode acessar todas as rotas.
+- **Sem testes automatizados:** os testes são manuais, via Postman.
+
+---
+
+## 🗺️ Próximos passos
+
+- [ ] Integrar um banco de dados real, modelado na disciplina do Projeto Integrador;
+- [ ] Reorganizar o código em camadas (rotas, controllers, middlewares);
+- [ ] Permitir alterar o `status` da doação;
+- [ ] Conectar a API ao front-end do projeto.
+
+---
+
+## 📝 Status atual
+
+**API v2 do Projeto Integrador — CRUD e middlewares concluídos.**
+
+- [x] Estrutura Node.js / Express
+- [x] Variáveis de ambiente com `.env` e `dotenv`
+- [x] `.gitignore` protegendo `.env` e `node_modules`
+- [x] Execução com Nodemon (`npm run dev`)
+- [x] Middleware de log
+- [x] Middleware de validação (POST e PUT)
+- [x] Rotas `GET /`, `GET /api/doacoes` e `GET /api/doacoes/:id`
+- [x] Rotas `POST`, `PUT` e `DELETE`
+- [x] Tratamento de rotas inexistentes (404)
+- [x] Status codes HTTP (200, 201, 400, 404)
+- [x] Documentação no README
+
+---
+
+## 📄 Observação
+
+Projeto acadêmico desenvolvido para o **Projeto Integrador** da **Faculdade Municipal de Palhoça (FMP)**.
