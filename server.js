@@ -23,6 +23,10 @@ app.use(registrarLog);
 
 // MIDDLEWARE 2: validação de dados (usado só no POST e PUT)
 function validarDoacao(req, res, next) {
+  if (!req.body) {
+    return res.status(400).json({ mensagem: "O corpo da requisição não pode estar vazio" });
+  }
+  
   const { doador, item, quantidade } = req.body;
   if (!doador) {
     return res.status(400).json({ mensagem: "O doador é obrigatório" });
