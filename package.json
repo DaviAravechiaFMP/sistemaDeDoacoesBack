@@ -21,6 +21,10 @@
   },
   "homepage": "https://github.com/DaviAravechiaFMP/sistemaDeDoacoesBack#readme",
   "dependencies": {
+    "dotenv": "^18.0.7",
     "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^1.14.10"
   }
 }
