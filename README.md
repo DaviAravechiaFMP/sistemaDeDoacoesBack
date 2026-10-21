@@ -1,8 +1,8 @@
-# 🤝 Sistema de Gestão de Doações FMP — API Back-end (v2)
+# 🤝 Sistema de Gestão de Doações FMP — Back-end (API v2 + Banco de Dados)
 
-API REST do **Projeto Integrador**, desenvolvida com **Node.js** e **Express**, responsável por fornecer e receber os dados do sistema de gestão de doações criado pelo grupo.
+**Projeto Integrador** com API REST em **Node.js** e **Express** e modelagem do banco de dados em **PostgreSQL**, responsável por fornecer e receber os dados do sistema de gestão de doações criado pelo grupo.
 
-> **Etapa atual (v2):** CRUD completo em memória, middlewares de log e validação, variáveis de ambiente com `.env`, reinício automático com Nodemon e status codes HTTP corretos.
+> **Etapa atual:** API com CRUD completo em memória (v2) + **modelagem e script do banco de dados PostgreSQL** (Desafio Técnico - Aula 10). A integração da API com o banco é a próxima etapa.
 
 ---
 
@@ -10,14 +10,15 @@ API REST do **Projeto Integrador**, desenvolvida com **Node.js** e **Express**, 
 
 - [Sobre o projeto](#-sobre-o-projeto)
 - [Integrantes do grupo](#-integrantes-do-grupo)
-- [O que mudou da v1 para a v2](#-o-que-mudou-da-v1-para-a-v2)
+- [O que mudou](#-o-que-mudou)
 - [Tecnologias utilizadas](#-tecnologias-utilizadas)
 - [Arquitetura](#-arquitetura)
-- [Como executar](#-como-executar)
+- [Como executar a API](#-como-executar-a-api)
 - [Estrutura do projeto](#-estrutura-do-projeto)
 - [Endpoints](#-endpoints)
 - [Middlewares](#-middlewares)
 - [Testes no Postman](#-testes-no-postman)
+- [Banco de dados (PostgreSQL)](#-banco-de-dados-postgresql)
 - [Limitações conhecidas](#-limitações-conhecidas)
 - [Próximos passos](#-próximos-passos)
 
@@ -25,18 +26,19 @@ API REST do **Projeto Integrador**, desenvolvida com **Node.js** e **Express**, 
 
 ## 📌 Sobre o projeto
 
-O **Sistema de Gestão de Doações FMP** organiza informações sobre doações (quem doou, o que foi doado, quantidade e situação), permitindo que esses dados sejam consumidos pelo front-end do Projeto Integrador.
+O **Sistema de Gestão de Doações FMP** intermedeia a arrecadação de donativos (alimentos, agasalhos, materiais escolares, sangue e eletrônicos) organizada pela comissão responsável (COPER) e por campanhas institucionais. O sistema cobre o fluxo completo: cadastro de campanhas, registro das doações feitas pelos alunos, validação por funcionários, anexação de comprovantes, geração de certificados e concessão de **horas complementares**.
 
-Esta API oferece:
+Esta etapa oferece:
 
 - Rota de verificação do servidor;
 - CRUD completo de doações (listar, buscar por ID, cadastrar, atualizar e remover);
 - Middlewares globais de **log** e de **validação** de dados;
 - Respostas com status codes apropriados (`200`, `201`, `400`, `404`);
 - Configurações protegidas em arquivo `.env`;
-- Ambiente de desenvolvimento com reinício automático (Nodemon).
+- Ambiente de desenvolvimento com reinício automático (Nodemon);
+- **Banco de dados relacional modelado em PostgreSQL** (12 tabelas, script DDL/DML e diagrama).
 
-> ⚠️ Os dados ficam **em memória** (um array dentro do servidor). Ao reiniciar ou encerrar a aplicação, tudo volta ao estado inicial. O banco de dados real entra nas próximas etapas.
+> ⚠️ Por enquanto a API guarda os dados **em memória** (um array dentro do servidor). Ao reiniciar, tudo volta ao estado inicial. O banco PostgreSQL já está modelado, mas **ainda não está conectado à API**.
 
 ---
 
@@ -51,7 +53,9 @@ Esta API oferece:
 
 ---
 
-## 🔄 O que mudou da v1 para a v2
+## 🔄 O que mudou
+
+### Da v1 para a v2 (API)
 
 | Item | v1 | v2 |
 |---|---|---|
@@ -64,6 +68,15 @@ Esta API oferece:
 | Respostas | Sem padrão definido | Status codes corretos: `200`, `201`, `400`, `404` |
 | Rotas inexistentes | Resposta padrão do Express | Middleware final com JSON `404` |
 
+### Nesta atualização (banco de dados)
+
+| Item | Antes | Agora |
+|---|---|---|
+| Persistência | Apenas array em memória | **Modelagem completa em PostgreSQL** (ainda não integrada à API) |
+| Script SQL | — | `database/script.sql` com DDL, DML e consultas com JOIN |
+| Documentação | Só da API | Seção do banco com diagrama ER, tabelas e relacionamentos |
+| Diagrama | — | Diagrama ER no README e imagem em `docs/` |
+
 ---
 
 ## 🧰 Tecnologias utilizadas
@@ -74,6 +87,8 @@ Esta API oferece:
 | **Express** (v5) | Criação do servidor e das rotas HTTP |
 | **Dotenv** | Leitura das variáveis de ambiente do `.env` |
 | **Nodemon** | Reinício automático do servidor em desenvolvimento |
+| **PostgreSQL** | Banco de dados relacional do projeto |
+| **pgAdmin 4** | Execução e teste do script SQL |
 | **NPM** | Gerenciamento de dependências e scripts |
 | **Git / GitHub** | Controle de versão e colaboração do grupo |
 | **Postman** | Testes manuais das rotas |
@@ -98,6 +113,8 @@ flowchart LR
     F -->|HTTP Response + JSON| A
 ```
 
+> Na próxima etapa, o array em memória será substituído pelo banco PostgreSQL.
+
 ### Fluxo de uma requisição
 
 1. O cliente envia uma requisição HTTP para um endpoint.
@@ -118,7 +135,7 @@ flowchart LR
 
 ---
 
-## 🚀 Como executar
+## 🚀 Como executar a API
 
 ### Pré-requisitos
 
@@ -184,14 +201,20 @@ A API ficará disponível em: **http://localhost:3000**
 
 ```text
 sistemaDeDoacoesBack/
+├── database/
+│   └── script.sql    <- Script PostgreSQL (DDL + DML + consultas JOIN)
+├── docs/
+│   └── diagrama.png  <- Diagrama do banco de dados
 ├── node_modules/
 ├── .env              <- Variáveis de ambiente (local, não vai ao GitHub)
 ├── .gitignore        <- Protege .env e node_modules
 ├── package.json      <- Scripts start/dev e dependências
 ├── package-lock.json
-├── README.md         <- Documentação da API
+├── README.md         <- Documentação do projeto
 └── server.js         <- Servidor Express, middlewares e rotas
 ```
+
+> Ajuste os nomes de pasta/arquivo acima se no repositório estiverem diferentes.
 
 ---
 
@@ -208,7 +231,7 @@ sistemaDeDoacoesBack/
 | `PUT` | `/api/doacoes/:id` | Atualiza uma doação existente | `200` / `400` / `404` |
 | `DELETE` | `/api/doacoes/:id` | Remove uma doação | `200` / `404` |
 
-### Modelo de dados
+### Modelo de dados da API (em memória)
 
 | Campo | Tipo | Descrição |
 |---|---|---|
@@ -395,9 +418,111 @@ Configure o corpo das requisições `POST` e `PUT` como **Body → raw → JSON*
 
 ---
 
+## 🗄️ Banco de dados (PostgreSQL)
+
+O banco foi modelado no **Desafio Técnico - Aula 10** e contém **12 tabelas**. O script completo está em [`database/script.sql`](database/script.sql).
+
+### Diagrama de entidades e relacionamentos
+
+```mermaid
+erDiagram
+    usuarios ||--o| alunos : "é"
+    usuarios ||--o| funcionarios : "é"
+    campanhas ||--o{ itens_prioritarios : possui
+    alunos ||--o{ doacoes : realiza
+    campanhas ||--o{ doacoes : recebe
+    funcionarios ||--o{ doacoes : "registra e valida"
+    doacoes ||--o{ doacao_itens : contem
+    itens ||--o{ doacao_itens : "aparece em"
+    doacoes ||--o{ anexos : possui
+    doacoes ||--o| certificados : gera
+    alunos ||--o{ notificacoes : recebe
+    doacoes ||--o{ notificacoes : origina
+    funcionarios ||--o{ registros_edicao : gera
+    doacoes ||--o{ registros_edicao : "é auditada em"
+```
+
+Diagrama físico completo (com colunas e tipos): [`docs/diagrama.png`](docs/diagrama.png).
+
+### Tabelas
+
+| Tabela | Função |
+|---|---|
+| `usuarios` | Dados de login e identificação (base para alunos e funcionários) |
+| `alunos` | Especialização de `usuarios`: matrícula, curso e saldo de horas |
+| `funcionarios` | Especialização de `usuarios`: departamento e cargo |
+| `campanhas` | Campanhas de arrecadação, regras de conversão em horas e limite de horas |
+| `itens_prioritarios` | Necessidades específicas de cada campanha (meta e urgência) |
+| `doacoes` | Registro de cada doação, com status, horas concedidas e responsáveis |
+| `itens` | Catálogo de itens que podem ser doados |
+| `doacao_itens` | Tabela de junção **N:N** entre `doacoes` e `itens` (com `quantidade`) |
+| `anexos` | Comprovantes de cada doação |
+| `certificados` | Certificado emitido para cada doação aprovada |
+| `notificacoes` | Avisos enviados aos alunos |
+| `registros_edicao` | Auditoria das alterações feitas por funcionários |
+
+### Relacionamentos
+
+| Tipo | Relacionamentos |
+|---|---|
+| **1:1** | `usuarios` ↔ `alunos`, `usuarios` ↔ `funcionarios`, `doacoes` ↔ `certificados` |
+| **1:N** | `campanhas` → `itens_prioritarios`, `alunos` → `doacoes`, `campanhas` → `doacoes`, `funcionarios` → `doacoes`, `doacoes` → `anexos`, `doacoes` → `notificacoes`, `funcionarios` → `registros_edicao` |
+| **N:N** | `doacoes` ↔ `itens` (via `doacao_itens`) |
+
+### Como executar o script no pgAdmin
+
+1. Instale o **PostgreSQL** e o **pgAdmin 4**.
+2. No pgAdmin, crie um banco de dados (ex.: `doacoes_fmp`).
+3. Clique com o botão direito no banco → **Query Tool**.
+4. Abra o arquivo `database/script.sql` (ícone de pasta) e clique em **Executar** (▶ ou `F5`).
+5. O script apaga as tabelas antigas (`DROP TABLE IF EXISTS`), cria as 12 tabelas, insere os dados de exemplo e roda as consultas.
+
+> ⚠️ O script **apaga e recria** todas as tabelas. Não execute em um banco que já tenha dados que você quer manter.
+
+### Consultas de exemplo (JOIN)
+
+**Doações com aluno e campanha**
+
+```sql
+SELECT d.id AS doacao_id, u.nome AS aluno, a.matricula,
+       c.titulo AS campanha, d.data, d.status, d.horas_concedidas
+FROM doacoes d
+JOIN alunos a ON d.aluno_id = a.id
+JOIN usuarios u ON a.id = u.id
+JOIN campanhas c ON d.campanha_id = c.id;
+```
+
+**Itens de cada doação (relação N:N)**
+
+```sql
+SELECT d.id AS doacao_id, u.nome AS doador, c.titulo AS campanha,
+       i.nome AS item_doado, i.categoria, di.quantidade
+FROM doacoes d
+JOIN alunos a ON d.aluno_id = a.id
+JOIN usuarios u ON a.id = u.id
+JOIN campanhas c ON d.campanha_id = c.id
+JOIN doacao_itens di ON d.id = di.doacao_id
+JOIN itens i ON di.item_id = i.id;
+```
+
+### Como a API atual se relaciona com o banco
+
+O modelo da API (em memória) é mais simples que o do banco. Na integração será preciso mapear:
+
+| Campo da API | Onde fica no banco |
+|---|---|
+| `id` | `doacoes.id` |
+| `doador` | `usuarios.nome` (via `doacoes.aluno_id` → `alunos` → `usuarios`) |
+| `item` | `itens.nome` (via `doacao_itens`) |
+| `quantidade` | `doacao_itens.quantidade` |
+| `status` | `doacoes.status` (no banco: `Pendente`, `Aprovada`...) |
+
+---
+
 ## ⚠️ Limitações conhecidas
 
-- **Sem persistência:** os dados vivem em memória e são perdidos ao reiniciar o servidor (inclusive a cada alteração salva no modo `npm run dev`).
+- **API sem banco:** os dados da API vivem em memória e são perdidos ao reiniciar o servidor (inclusive a cada alteração salva no modo `npm run dev`). O PostgreSQL está modelado, mas ainda não conectado.
+- **Modelos diferentes:** a API usa `doador`/`item`/`quantidade` em texto livre, enquanto o banco é normalizado (ver tabela de mapeamento acima).
 - **Validação antes da busca no `PUT`:** como `validarDoacao` roda antes da rota, um `PUT` com corpo inválido em um ID inexistente retorna `400` (e não `404`).
 - **Sem autenticação:** qualquer cliente pode acessar todas as rotas.
 - **Sem testes automatizados:** os testes são manuais, via Postman.
@@ -406,16 +531,18 @@ Configure o corpo das requisições `POST` e `PUT` como **Body → raw → JSON*
 
 ## 🗺️ Próximos passos
 
-- [ ] Integrar um banco de dados real, modelado na disciplina do Projeto Integrador;
+- [ ] Conectar a API ao PostgreSQL (ex.: biblioteca `pg`) usando variáveis no `.env`;
+- [ ] Adaptar as rotas para ler e gravar nas tabelas do banco;
 - [ ] Reorganizar o código em camadas (rotas, controllers, middlewares);
 - [ ] Permitir alterar o `status` da doação;
+- [ ] Implementar autenticação (a tabela `usuarios` já prevê senha e bloqueio por tentativas);
 - [ ] Conectar a API ao front-end do projeto.
 
 ---
 
 ## 📝 Status atual
 
-**API v2 do Projeto Integrador — CRUD e middlewares concluídos.**
+**API v2 concluída + banco de dados PostgreSQL modelado.**
 
 - [x] Estrutura Node.js / Express
 - [x] Variáveis de ambiente com `.env` e `dotenv`
@@ -427,7 +554,11 @@ Configure o corpo das requisições `POST` e `PUT` como **Body → raw → JSON*
 - [x] Rotas `POST`, `PUT` e `DELETE`
 - [x] Tratamento de rotas inexistentes (404)
 - [x] Status codes HTTP (200, 201, 400, 404)
+- [x] Modelagem do banco (conceitual, lógica e física)
+- [x] Script SQL com DDL, DML e consultas JOIN em `database/script.sql`
+- [x] Diagrama do banco
 - [x] Documentação no README
+- [ ] Integração API ↔ PostgreSQL
 
 ---
 
