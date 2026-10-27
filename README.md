@@ -1,8 +1,8 @@
-# 🤝 Sistema de Gestão de Doações FMP — Back-end (API v2 + Banco de Dados)
+# 🤝 Sistema de Gestão de Doações FMP — Back-end (API v3 + PostgreSQL)
 
-**Projeto Integrador** com API REST em **Node.js** e **Express** e modelagem do banco de dados em **PostgreSQL**, responsável por fornecer e receber os dados do sistema de gestão de doações criado pelo grupo.
+**Projeto Integrador** com API REST desenvolvida em **Node.js** e **Express**, integrada diretamente ao banco de dados relacional **PostgreSQL**, responsável por fornecer e receber os dados do sistema de gestão de doações criado pelo grupo.
 
-> **Etapa atual:** API com CRUD completo em memória (v2) + **modelagem e script do banco de dados PostgreSQL** (Desafio Técnico - Aula 10). A integração da API com o banco é a próxima etapa.
+> **Etapa atual:** API com CRUD completo conectado ao PostgreSQL com persistência real dos dados (Desafio Prático - Aula 11).
 
 ---
 
@@ -19,7 +19,6 @@
 - [Middlewares](#-middlewares)
 - [Testes no Postman](#-testes-no-postman)
 - [Banco de dados (PostgreSQL)](#-banco-de-dados-postgresql)
-- [Limitações conhecidas](#-limitações-conhecidas)
 - [Próximos passos](#-próximos-passos)
 
 ---
@@ -30,15 +29,13 @@ O **Sistema de Gestão de Doações FMP** intermedeia a arrecadação de donativ
 
 Esta etapa oferece:
 
-- Rota de verificação do servidor;
-- CRUD completo de doações (listar, buscar por ID, cadastrar, atualizar e remover);
-- Middlewares globais de **log** e de **validação** de dados;
-- Respostas com status codes apropriados (`200`, `201`, `400`, `404`);
-- Configurações protegidas em arquivo `.env`;
-- Ambiente de desenvolvimento com reinício automático (Nodemon);
-- **Banco de dados relacional modelado em PostgreSQL** (12 tabelas, script DDL/DML e diagrama).
-
-> ⚠️ Por enquanto a API guarda os dados **em memória** (um array dentro do servidor). Ao reiniciar, tudo volta ao estado inicial. O banco PostgreSQL já está modelado, mas **ainda não está conectado à API**.
+- Rota de verificação da conexão com o banco;
+- CRUD completo de doações (listar todas com `JOIN`, buscar por ID, cadastrar, atualizar e remover);
+- Persistência real dos dados integrada ao **PostgreSQL** via driver `pg` (Pool de conexões);
+- Middlewares globais de **log** de requisições no terminal;
+- Respostas padronizadas em JSON com status codes apropriados (`200`, `201`, `400`, `404`, `500`);
+- Credenciais sensíveis protegidas via variáveis de ambiente no `.env`;
+- Ambiente de desenvolvimento com reinício automático (Nodemon).
 
 ---
 
@@ -55,27 +52,18 @@ Esta etapa oferece:
 
 ## 🔄 O que mudou
 
-### Da v1 para a v2 (API)
+### Da v2 (Memória) para a v3 (PostgreSQL Real)
 
-| Item | v1 | v2 |
+| Item | Versão Anterior (v2) | Versão Atual (v3 - Aula 11) |
 |---|---|---|
-| Execução | `node server.js` manual | `npm run dev` com **Nodemon** (reinicia ao salvar) |
-| Configuração | Porta fixa no código | Porta em **`.env`** (`process.env.PORT`) |
-| Segurança do repositório | — | **`.gitignore`** protege `.env` e `node_modules` |
-| Rotas | Listar e cadastrar | **CRUD completo**, incluindo rotas com parâmetro (`/:id`) |
-| Validação | Dentro das rotas | **Middleware** `validarDoacao` (POST e PUT) |
-| Observabilidade | — | **Middleware de log** no terminal |
-| Respostas | Sem padrão definido | Status codes corretos: `200`, `201`, `400`, `404` |
-| Rotas inexistentes | Resposta padrão do Express | Middleware final com JSON `404` |
-
-### Nesta atualização (banco de dados)
-
-| Item | Antes | Agora |
-|---|---|---|
-| Persistência | Apenas array em memória | **Modelagem completa em PostgreSQL** (ainda não integrada à API) |
-| Script SQL | — | `database/script.sql` com DDL, DML e consultas com JOIN |
-| Documentação | Só da API | Seção do banco com diagrama ER, tabelas e relacionamentos |
-| Diagrama | — | Diagrama ER no README e imagem em `docs/` |
+| Persistência | Array temporário em memória | **PostgreSQL** com persistência real dos dados |
+| Driver de Banco | — | Driver oficial **`pg`** (`Pool` de conexões via `db.js`) |
+| Configuração `.env` | Apenas `PORT` | `PORT`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` e `DB_NAME` |
+| Rotas `GET` | Leitura de array local | `SELECT` SQL com `JOIN` trazendo dados de alunos, usuários e campanhas |
+| Rota `POST` | `push` no array | `INSERT INTO doacoes (...) RETURNING *` |
+| Rota `PUT` | Alteração de objeto local | `UPDATE doacoes SET ... RETURNING *` com `COALESCE` |
+| Rota `DELETE` | `filter` no array | `DELETE FROM doacoes WHERE id = $1` |
+| Tratamento de erros | Básico | Blocos `try/catch` com código `500 Internal Server Error` |
 
 ---
 
@@ -83,37 +71,31 @@ Esta etapa oferece:
 
 | Tecnologia | Função no projeto |
 |---|---|
-| **Node.js** | Executa o JavaScript no back-end |
-| **Express** (v5) | Criação do servidor e das rotas HTTP |
-| **Dotenv** | Leitura das variáveis de ambiente do `.env` |
-| **Nodemon** | Reinício automático do servidor em desenvolvimento |
-| **PostgreSQL** | Banco de dados relacional do projeto |
-| **pgAdmin 4** | Execução e teste do script SQL |
-| **NPM** | Gerenciamento de dependências e scripts |
+| **Node.js** | Execução do código JavaScript no servidor |
+| **Express** (v5) | Criação do servidor HTTP e rotas REST |
+| **pg (node-postgres)** | Driver de conexão e execução de queries SQL no PostgreSQL |
+| **Dotenv** | Gerenciamento de variáveis de ambiente e credenciais sensíveis |
+| **Nodemon** | Auto-reload do servidor em ambiente de desenvolvimento |
+| **PostgreSQL** | Banco de dados relacional principal |
+| **pgAdmin 4** | Interface para gerenciamento e execução dos scripts DDL/DML |
 | **Git / GitHub** | Controle de versão e colaboração do grupo |
-| **Postman** | Testes manuais das rotas |
+| **Postman** | Validação e testes de integração dos endpoints HTTP |
 
 ---
 
 ## 🏗️ Arquitetura
 
-A aplicação segue o modelo **cliente-servidor**. Toda requisição passa pelos middlewares antes de chegar à rota.
+A aplicação segue a arquitetura cliente-servidor integrada ao SGBD PostgreSQL:
 
 ```mermaid
 flowchart LR
     A[Cliente / Postman / Front-end] -->|HTTP Request| B[express.json]
     B --> C[registrarLog]
-    C --> D{Rota POST ou PUT?}
-    D -->|Sim| E[validarDoacao]
-    D -->|Não| F[Rota Express]
-    E -->|Dados válidos| F
-    E -->|Dados inválidos| X[400 Bad Request]
-    F --> G[(Array em memória)]
-    G --> F
-    F -->|HTTP Response + JSON| A
+    C --> D[Rotas /api/doacoes]
+    D -->|pool.query| E[(PostgreSQL)]
+    E -->|SQL Result| D
+    D -->|HTTP Response + JSON| A
 ```
-
-> Na próxima etapa, o array em memória será substituído pelo banco PostgreSQL.
 
 ### Fluxo de uma requisição
 
