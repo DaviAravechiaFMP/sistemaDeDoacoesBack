@@ -1,8 +1,8 @@
-# 🤝 Sistema de Gestão de Doações FMP — Back-end (API v3 + PostgreSQL)
+# 🤝 Sistema de Gestão de Doações FMP — Back-end (API v2 + Banco de Dados)
 
-**Projeto Integrador** com API REST desenvolvida em **Node.js** e **Express**, integrada ao banco de dados relacional **PostgreSQL**, responsável por fornecer e receber os dados do sistema de gestão de doações criado pelo grupo.
+**Projeto Integrador** com API REST em **Node.js** e **Express** e modelagem do banco de dados em **PostgreSQL**, responsável por fornecer e receber os dados do sistema de gestão de doações criado pelo grupo.
 
-> **Etapa atual:** CRUD completo conectado ao PostgreSQL com persistência real dos dados (Desafio Prático - Aula 11).
+> **Etapa atual:** API com CRUD completo em memória (v2) + **modelagem e script do banco de dados PostgreSQL** (Desafio Técnico - Aula 10). A integração da API com o banco é a próxima etapa.
 
 ---
 
@@ -14,14 +14,13 @@
 - [Tecnologias utilizadas](#-tecnologias-utilizadas)
 - [Arquitetura](#-arquitetura)
 - [Como executar a API](#-como-executar-a-api)
-- [Configuração do banco de dados](#-configuração-do-banco-de-dados)
 - [Estrutura do projeto](#-estrutura-do-projeto)
 - [Endpoints](#-endpoints)
+- [Middlewares](#-middlewares)
 - [Testes no Postman](#-testes-no-postman)
-- [Prova de persistência](#-prova-de-persistência)
-- [Modelagem do banco (PostgreSQL)](#-modelagem-do-banco-postgresql)
-- [Checklist do desafio](#-checklist-do-desafio-aula-11)
-- [Limitações conhecidas e próximos passos](#-limitações-conhecidas-e-próximos-passos)
+- [Banco de dados (PostgreSQL)](#-banco-de-dados-postgresql)
+- [Limitações conhecidas](#-limitações-conhecidas)
+- [Próximos passos](#-próximos-passos)
 
 ---
 
@@ -31,13 +30,15 @@ O **Sistema de Gestão de Doações FMP** intermedeia a arrecadação de donativ
 
 Esta etapa oferece:
 
-- Conexão com o **PostgreSQL** via driver `pg` (`Pool` de conexões), configurada em arquivo separado (`db.js`);
-- Credenciais protegidas por variáveis de ambiente (`.env`) e `.gitignore`;
-- CRUD completo de doações: listar todas (com `JOIN`), buscar por ID, cadastrar, atualizar e remover;
-- **Persistência real**: os dados continuam no banco mesmo após reiniciar o servidor;
-- Middleware global de **log** de requisições no terminal;
-- Respostas em JSON com status codes apropriados (`200`, `201`, `400`, `404`, `500`) e tratamento de erros com `try/catch`;
-- Ambiente de desenvolvimento com reinício automático (Nodemon).
+- Rota de verificação do servidor;
+- CRUD completo de doações (listar, buscar por ID, cadastrar, atualizar e remover);
+- Middlewares globais de **log** e de **validação** de dados;
+- Respostas com status codes apropriados (`200`, `201`, `400`, `404`);
+- Configurações protegidas em arquivo `.env`;
+- Ambiente de desenvolvimento com reinício automático (Nodemon);
+- **Banco de dados relacional modelado em PostgreSQL** (12 tabelas, script DDL/DML e diagrama).
+
+> ⚠️ Por enquanto a API guarda os dados **em memória** (um array dentro do servidor). Ao reiniciar, tudo volta ao estado inicial. O banco PostgreSQL já está modelado, mas **ainda não está conectado à API**.
 
 ---
 
@@ -54,18 +55,27 @@ Esta etapa oferece:
 
 ## 🔄 O que mudou
 
-### Da v2 (Memória) para a v3 (PostgreSQL Real)
+### Da v1 para a v2 (API)
 
-| Item | Versão Anterior (v2) | Versão Atual (v3 - Aula 11) |
+| Item | v1 | v2 |
 |---|---|---|
-| Persistência | Array temporário em memória | **PostgreSQL** com persistência real dos dados |
-| Driver de Banco | — | Driver oficial **`pg`** (`Pool` de conexões em `db.js`) |
-| Configuração `.env` | Apenas `PORT` | `PORT`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` e `DB_NAME` |
-| Rotas `GET` | Leitura de array local | `SELECT` SQL com `JOIN` trazendo dados de alunos, usuários e campanhas |
-| Rota `POST` | `push` no array | `INSERT INTO doacoes (...) RETURNING *` |
-| Rota `PUT` | Alteração de objeto local | `UPDATE doacoes SET ... RETURNING *` com `COALESCE` |
-| Rota `DELETE` | `filter` no array | `DELETE FROM doacoes WHERE id = $1 RETURNING *` |
-| Tratamento de erros | Básico | Blocos `try/catch` com código `500 Internal Server Error` |
+| Execução | `node server.js` manual | `npm run dev` com **Nodemon** (reinicia ao salvar) |
+| Configuração | Porta fixa no código | Porta em **`.env`** (`process.env.PORT`) |
+| Segurança do repositório | — | **`.gitignore`** protege `.env` e `node_modules` |
+| Rotas | Listar e cadastrar | **CRUD completo**, incluindo rotas com parâmetro (`/:id`) |
+| Validação | Dentro das rotas | **Middleware** `validarDoacao` (POST e PUT) |
+| Observabilidade | — | **Middleware de log** no terminal |
+| Respostas | Sem padrão definido | Status codes corretos: `200`, `201`, `400`, `404` |
+| Rotas inexistentes | Resposta padrão do Express | Middleware final com JSON `404` |
+
+### Nesta atualização (banco de dados)
+
+| Item | Antes | Agora |
+|---|---|---|
+| Persistência | Apenas array em memória | **Modelagem completa em PostgreSQL** (ainda não integrada à API) |
+| Script SQL | — | `database/script.sql` com DDL, DML e consultas com JOIN |
+| Documentação | Só da API | Seção do banco com diagrama ER, tabelas e relacionamentos |
+| Diagrama | — | Diagrama ER no README e imagem em `docs/` |
 
 ---
 
@@ -73,47 +83,55 @@ Esta etapa oferece:
 
 | Tecnologia | Função no projeto |
 |---|---|
-| **Node.js** | Execução do código JavaScript no servidor |
-| **Express** (v5) | Criação do servidor HTTP e rotas REST |
-| **pg (node-postgres)** | Driver de conexão e execução de queries SQL no PostgreSQL |
-| **Dotenv** | Gerenciamento de variáveis de ambiente e credenciais sensíveis |
-| **Nodemon** | Auto-reload do servidor em ambiente de desenvolvimento |
-| **PostgreSQL** | Banco de dados relacional principal |
-| **pgAdmin 4** | Interface para gerenciamento e execução do script SQL |
+| **Node.js** | Executa o JavaScript no back-end |
+| **Express** (v5) | Criação do servidor e das rotas HTTP |
+| **Dotenv** | Leitura das variáveis de ambiente do `.env` |
+| **Nodemon** | Reinício automático do servidor em desenvolvimento |
+| **PostgreSQL** | Banco de dados relacional do projeto |
+| **pgAdmin 4** | Execução e teste do script SQL |
+| **NPM** | Gerenciamento de dependências e scripts |
 | **Git / GitHub** | Controle de versão e colaboração do grupo |
-| **Postman** | Validação e testes de integração dos endpoints HTTP |
+| **Postman** | Testes manuais das rotas |
 
 ---
 
 ## 🏗️ Arquitetura
 
+A aplicação segue o modelo **cliente-servidor**. Toda requisição passa pelos middlewares antes de chegar à rota.
+
 ```mermaid
 flowchart LR
     A[Cliente / Postman / Front-end] -->|HTTP Request| B[express.json]
     B --> C[registrarLog]
-    C --> D[Rotas /api/doacoes]
-    D -->|pool.query| E[(PostgreSQL)]
-    E -->|SQL Result| D
-    D -->|HTTP Response + JSON| A
+    C --> D{Rota POST ou PUT?}
+    D -->|Sim| E[validarDoacao]
+    D -->|Não| F[Rota Express]
+    E -->|Dados válidos| F
+    E -->|Dados inválidos| X[400 Bad Request]
+    F --> G[(Array em memória)]
+    G --> F
+    F -->|HTTP Response + JSON| A
 ```
+
+> Na próxima etapa, o array em memória será substituído pelo banco PostgreSQL.
 
 ### Fluxo de uma requisição
 
 1. O cliente envia uma requisição HTTP para um endpoint.
 2. `express.json()` converte o corpo da requisição em objeto JavaScript (`req.body`).
 3. `registrarLog` imprime no terminal o horário, o método e a URL.
-4. A rota valida os dados recebidos (`req.params` / `req.body`). Se algo estiver errado, responde `400`.
-5. A rota executa a query SQL no PostgreSQL com `pool.query`, usando **queries parametrizadas** (`$1, $2...`), o que evita SQL Injection.
-6. O servidor devolve o status code correto e o JSON de resposta. Qualquer falha inesperada cai no `catch` e retorna `500`.
+4. Em **POST** e **PUT**, `validarDoacao` confere os dados enviados. Se algo estiver errado, responde `400` e a rota nem é executada.
+5. A rota consulta ou altera o array em memória.
+6. O servidor devolve o status code correto e o JSON de resposta.
 
 ### Verbos HTTP utilizados
 
-| Verbo | Operação SQL | Uso nesta API |
+| Verbo | Uso geral | Uso nesta API |
 |---|---|---|
-| `GET` | `SELECT` | Listar todas as doações e buscar uma por ID |
-| `POST` | `INSERT` | Cadastrar nova doação |
-| `PUT` | `UPDATE` | Atualizar uma doação existente |
-| `DELETE` | `DELETE` | Remover uma doação pelo ID |
+| `GET` | Consultar dados | Listar todas as doações e buscar uma por ID |
+| `POST` | Criar dados | Cadastrar nova doação |
+| `PUT` | Atualizar dados | Atualizar uma doação existente |
+| `DELETE` | Remover dados | Remover uma doação pelo ID |
 
 ---
 
@@ -123,7 +141,6 @@ flowchart LR
 
 - [Node.js](https://nodejs.org/) **18 ou superior**
 - NPM (já vem com o Node.js)
-- [PostgreSQL](https://www.postgresql.org/) e [pgAdmin 4](https://www.pgadmin.org/)
 - Git
 
 ### 1. Clonar o repositório
@@ -133,41 +150,23 @@ git clone https://github.com/DaviAravechiaFMP/sistemaDeDoacoesBack.git
 cd sistemaDeDoacoesBack
 ```
 
-### 2. Configurar o banco de dados
+### 2. Criar o arquivo `.env`
 
-Siga a seção [Configuração do banco de dados](#-configuração-do-banco-de-dados) (criar o banco no pgAdmin e executar o script `.sql`).
-
-### 3. Criar o arquivo `.env`
-
-Na raiz do projeto, crie um arquivo chamado `.env` com o conteúdo abaixo (ajuste para a sua máquina):
+Na raiz do projeto, crie um arquivo chamado `.env` com:
 
 ```env
 PORT=3000
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=sua_senha_aqui
-DB_NAME=doacoes_fmp
 ```
 
-| Variável | Descrição |
-|---|---|
-| `PORT` | Porta em que a API vai rodar (se não for definida, usa `3000`) |
-| `DB_HOST` | Endereço do servidor PostgreSQL (`localhost` em ambiente local) |
-| `DB_PORT` | Porta do PostgreSQL (padrão `5432`) |
-| `DB_USER` | Usuário do PostgreSQL |
-| `DB_PASSWORD` | Senha do usuário do PostgreSQL |
-| `DB_NAME` | Nome do banco criado no pgAdmin |
+> O `.env` está no `.gitignore` e **não deve ser enviado ao GitHub**. Se `PORT` não for definida, a API usa `3000` por padrão.
 
-> 🔒 O `.env` está no `.gitignore` e **nunca deve ser enviado ao GitHub**, pois contém credenciais.
-
-### 4. Instalar as dependências
+### 3. Instalar as dependências
 
 ```bash
 npm install
 ```
 
-### 5. Iniciar o servidor
+### 4. Iniciar o servidor
 
 **Desenvolvimento** (com Nodemon, reinicia ao salvar):
 
@@ -198,79 +197,58 @@ A API ficará disponível em: **http://localhost:3000**
 
 ---
 
-## 🗄️ Configuração do banco de dados
-
-O script de criação do banco (DDL + dados de teste) é o arquivo [`Criacao_banco_postgres_projeto_integrador.sql`](Criacao_banco_postgres_projeto_integrador.sql), na raiz do repositório.
-
-### Passo a passo no pgAdmin
-
-1. Instale o **PostgreSQL** e o **pgAdmin 4**.
-2. No pgAdmin, clique com o botão direito em **Databases → Create → Database** e crie um banco (ex.: `doacoes_fmp`).
-3. Clique com o botão direito no banco criado → **Query Tool**.
-4. Abra o arquivo `Criacao_banco_postgres_projeto_integrador.sql` (ícone de pasta) e clique em **Executar** (▶ ou `F5`).
-5. O script cria as **12 tabelas** (com `PRIMARY KEY`, `FOREIGN KEY` e a tabela de junção N:N `doacao_itens`) e insere os dados de teste (7 usuários, 4 alunos, 3 campanhas, 5 itens e 3 doações).
-6. Confira em **Schemas → public → Tables** se as tabelas apareceram.
-7. Use o mesmo nome do banco no `.env` (`DB_NAME=doacoes_fmp`).
-
-> ⚠️ O script **apaga e recria** as tabelas (`DROP TABLE IF EXISTS ... CASCADE`). Não execute em um banco que já tenha dados que você quer manter.
-
-### Dados de teste úteis para o `POST`
-
-| Tabela | IDs disponíveis |
-|---|---|
-| `alunos` | `2` (Davi), `3` (Eduardo), `4` (Lucas Schutz), `5` (Vitor) |
-| `campanhas` | `1` (Campanha de Inverno 2026), `2` (SOS Enchentes RS), `3` (Material Escolar Solidário) |
-
----
-
 ## 📁 Estrutura do projeto
 
 ```text
 sistemaDeDoacoesBack/
-├── .env                                          <- Credenciais (local, NÃO vai ao GitHub)
-├── .gitignore                                    <- Protege .env e node_modules
-├── Criacao_banco_postgres_projeto_integrador.sql <- Script PostgreSQL (DDL + dados de teste)
-├── Diagrama projeto integrador.png               <- Diagrama do banco de dados
-├── db.js                                         <- Conexão com o PostgreSQL (Pool do pg + dotenv)
-├── server.js                                     <- Servidor Express, middlewares e rotas CRUD
-├── package.json                                  <- Scripts start/dev e dependências
+├── database/
+│   └── script.sql    <- Script PostgreSQL (DDL + DML + consultas JOIN)
+├── docs/
+│   └── diagrama.png  <- Diagrama do banco de dados
+├── node_modules/
+├── .env              <- Variáveis de ambiente (local, não vai ao GitHub)
+├── .gitignore        <- Protege .env e node_modules
+├── package.json      <- Scripts start/dev e dependências
 ├── package-lock.json
-└── README.md                                     <- Documentação do projeto
+├── README.md         <- Documentação do projeto
+└── server.js         <- Servidor Express, middlewares e rotas
 ```
+
+> Ajuste os nomes de pasta/arquivo acima se no repositório estiverem diferentes.
 
 ---
 
 ## 🔌 Endpoints
 
-### Tabela de endpoints
+### Visão geral
 
-| VERBO | URL | AÇÃO |
+| Método | Endpoint | Descrição | Status possíveis |
+|---|---|---|---|
+| `GET` | `/` | Verifica se a API está no ar | `200` |
+| `GET` | `/api/doacoes` | Lista todas as doações | `200` |
+| `GET` | `/api/doacoes/:id` | Busca uma doação pelo ID | `200` / `404` |
+| `POST` | `/api/doacoes` | Cadastra uma nova doação | `201` / `400` |
+| `PUT` | `/api/doacoes/:id` | Atualiza uma doação existente | `200` / `400` / `404` |
+| `DELETE` | `/api/doacoes/:id` | Remove uma doação | `200` / `404` |
+
+### Modelo de dados da API (em memória)
+
+| Campo | Tipo | Descrição |
 |---|---|---|
-| `GET` | `/` | Verifica se a API está no ar |
-| `GET` | `/api/doacoes` | Lista todas as doações (`SELECT` com `JOIN`) |
-| `GET` | `/api/doacoes/:id` | Busca uma doação pelo ID (`SELECT ... WHERE id = $1`) |
-| `POST` | `/api/doacoes` | Cadastra uma nova doação (`INSERT`) |
-| `PUT` | `/api/doacoes/:id` | Atualiza uma doação existente (`UPDATE`) |
-| `DELETE` | `/api/doacoes/:id` | Remove uma doação (`DELETE`) |
+| `id` | Número | Gerado automaticamente pela API |
+| `doador` | Texto | Nome de quem doou |
+| `item` | Texto | O que foi doado |
+| `quantidade` | Número | Quantidade doada (maior que 0) |
+| `status` | Texto | `"pendente"` ao cadastrar (a API não altera esse campo no `PUT`) |
 
-### Status codes por endpoint
+Dados iniciais carregados ao subir o servidor:
 
-| Endpoint | Status possíveis |
-|---|---|
-| `GET /` | `200` |
-| `GET /api/doacoes` | `200` / `500` |
-| `GET /api/doacoes/:id` | `200` / `400` / `404` / `500` |
-| `POST /api/doacoes` | `201` / `400` / `500` |
-| `PUT /api/doacoes/:id` | `200` / `400` / `404` / `500` |
-| `DELETE /api/doacoes/:id` | `200` / `400` / `404` / `500` |
-
-| Código | Significado |
-|---|---|
-| `200 OK` | Requisição bem-sucedida |
-| `201 Created` | Registro criado com sucesso (`POST`) |
-| `400 Bad Request` | ID inválido ou campos obrigatórios ausentes |
-| `404 Not Found` | Doação (ou rota) não encontrada |
-| `500 Internal Server Error` | Erro no banco de dados, tratado com `try/catch` |
+```json
+[
+  { "id": 1, "doador": "Maria Silva", "item": "Cesta básica", "quantidade": 2, "status": "recebida" },
+  { "id": 2, "doador": "João Souza", "item": "Cobertor", "quantidade": 5, "status": "pendente" }
+]
+```
 
 ---
 
@@ -281,68 +259,30 @@ Verifica se a API está ativa.
 **200 OK**
 
 ```json
-{ "mensagem": "API do Sistema de Doações funcionando com PostgreSQL!" }
+{ "mensagem": "API do Sistema de Doações funcionando" }
 ```
 
 ### 2. `GET /api/doacoes`
 
-Lista todas as doações do banco, ordenadas por `id`. Usa `JOIN` com `alunos` e `usuarios` (nome do doador) e `LEFT JOIN` com `campanhas`.
+Retorna todas as doações armazenadas.
 
 **200 OK**
 
 ```json
 [
-  {
-    "id": 1,
-    "doador": "Davi",
-    "campanha": "Campanha de Inverno 2026",
-    "status": "Aprovada",
-    "data": "2026-06-01T03:00:00.000Z",
-    "horas_concedidas": "10.00",
-    "local_entrega": "Recepção Principal FMP"
-  },
-  {
-    "id": 2,
-    "doador": "Eduardo",
-    "campanha": "SOS Enchentes RS",
-    "status": "Aprovada",
-    "data": "2026-06-20T03:00:00.000Z",
-    "horas_concedidas": "20.00",
-    "local_entrega": "Hemocentro SC"
-  }
+  { "id": 1, "doador": "Maria Silva", "item": "Cesta básica", "quantidade": 2, "status": "recebida" },
+  { "id": 2, "doador": "João Souza", "item": "Cobertor", "quantidade": 5, "status": "pendente" }
 ]
-```
-
-> O exemplo mostra as duas primeiras doações de teste. O formato de `data` pode variar conforme o fuso horário da máquina, e `horas_concedidas` volta como texto porque o tipo `NUMERIC` do PostgreSQL é serializado como *string* pelo driver `pg`.
-
-**500 Internal Server Error**
-
-```json
-{ "erro": "Erro ao buscar doações do banco de dados", "detalhe": "mensagem do erro" }
 ```
 
 ### 3. `GET /api/doacoes/:id`
 
-Busca uma doação pelo ID, recebido como parâmetro de rota (`req.params.id`).
+Busca uma doação pelo ID (parâmetro de rota).
 
 **200 OK**
 
 ```json
-{
-  "id": 1,
-  "doador": "Davi",
-  "campanha": "Campanha de Inverno 2026",
-  "status": "Aprovada",
-  "data": "2026-06-01T03:00:00.000Z",
-  "horas_concedidas": "10.00",
-  "local_entrega": "Recepção Principal FMP"
-}
-```
-
-**400 Bad Request** (ID não numérico, ex.: `/api/doacoes/abc`)
-
-```json
-{ "mensagem": "O ID deve ser um número válido" }
+{ "id": 1, "doador": "Maria Silva", "item": "Cesta básica", "quantidade": 2, "status": "recebida" }
 ```
 
 **404 Not Found**
@@ -353,79 +293,49 @@ Busca uma doação pelo ID, recebido como parâmetro de rota (`req.params.id`).
 
 ### 4. `POST /api/doacoes`
 
-Cadastra uma nova doação com os dados do `req.body`. Executa `INSERT INTO doacoes (...) RETURNING *` e devolve o registro criado, com o `id` gerado pelo banco.
+Cadastra uma nova doação. O `id` é o **maior ID existente + 1** e o `status` inicial é `"pendente"`.
 
 **Corpo da requisição (JSON)**
 
 | Campo | Tipo | Obrigatório | Regra |
 |---|---|---|---|
-| `aluno_id` | Número | Sim | Deve ser o ID de um aluno existente (FK para `alunos`) |
-| `data` | Texto (`AAAA-MM-DD`) | Sim | Data da doação |
-| `campanha_id` | Número | Não | ID de uma campanha existente (se omitido, fica `null`) |
-| `status` | Texto | Não | Padrão: `"Pendente"` |
-| `local_entrega` | Texto | Não | Padrão: `"Recepção Principal FMP"` |
+| `doador` | Texto | Sim | Não pode ser vazio |
+| `item` | Texto | Sim | Não pode ser vazio |
+| `quantidade` | Número | Sim | Deve ser do tipo número e maior que 0 |
 
 ```json
-{
-  "aluno_id": 2,
-  "campanha_id": 1,
-  "data": "2026-10-27",
-  "status": "Pendente",
-  "local_entrega": "Recepção Principal FMP"
-}
+{ "doador": "Ana Costa", "item": "Agasalho", "quantidade": 3 }
 ```
 
 **201 Created**
 
 ```json
-{
-  "id": 4,
-  "aluno_id": 2,
-  "campanha_id": 1,
-  "func_registro_id": null,
-  "func_validacao_id": null,
-  "data": "2026-10-27T03:00:00.000Z",
-  "status": "Pendente",
-  "foto_evidencia": null,
-  "motivo_reprovacao": null,
-  "horas_concedidas": null,
-  "horario_doacao": null,
-  "retencao_anos": null,
-  "local_entrega": "Recepção Principal FMP"
-}
+{ "id": 3, "doador": "Ana Costa", "item": "Agasalho", "quantidade": 3, "status": "pendente" }
 ```
 
-**400 Bad Request**
+**400 Bad Request** (exemplo)
 
 ```json
-{ "mensagem": "Os campos aluno_id e data são obrigatórios" }
+{ "mensagem": "A quantidade deve ser um número maior que 0" }
 ```
-
-**500 Internal Server Error**: falha ao gravar no banco (ex.: `aluno_id` ou `campanha_id` inexistente, que viola a chave estrangeira).
 
 ### 5. `PUT /api/doacoes/:id`
 
-Atualiza uma doação existente usando o `id` de `req.params` e os dados de `req.body`. Executa `UPDATE ... SET campo = COALESCE($n, campo) ... RETURNING *`: **campos não enviados são mantidos** como estavam.
+Atualiza `doador`, `item` e `quantidade` de uma doação existente. Usa as mesmas regras de validação do `POST`.
 
-**Corpo da requisição (JSON)** — todos os campos são opcionais
-
-| Campo | Tipo | Descrição |
-|---|---|---|
-| `status` | Texto | Ex.: `"Aprovada"`, `"Reprovada"`, `"Pendente"` |
-| `local_entrega` | Texto | Local onde a doação foi entregue |
-| `horas_concedidas` | Número | Horas complementares concedidas |
+**Corpo da requisição (JSON)**
 
 ```json
-{ "status": "Aprovada", "horas_concedidas": 8 }
+{ "doador": "Maria Silva", "item": "Cesta básica completa", "quantidade": 4 }
 ```
 
-**200 OK**: devolve o registro completo já atualizado.
-
-**400 Bad Request**
+**200 OK**
 
 ```json
-{ "mensagem": "O ID deve ser um número válido" }
+{ "id": 1, "doador": "Maria Silva", "item": "Cesta básica completa", "quantidade": 4, "status": "recebida" }
 ```
+
+**400 Bad Request**: corpo inválido (mesmas mensagens do `POST`).
 
 **404 Not Found**
 
@@ -435,34 +345,48 @@ Atualiza uma doação existente usando o `id` de `req.params` e os dados de `req
 
 ### 6. `DELETE /api/doacoes/:id`
 
-Remove a doação pelo `id` de `req.params` (`DELETE FROM doacoes WHERE id = $1 RETURNING *`).
+Remove uma doação pelo ID.
 
 **200 OK**
 
 ```json
-{ "mensagem": "Doação removida com sucesso do banco de dados" }
+{ "mensagem": "Doação removida com sucesso" }
 ```
 
-**400 Bad Request**: `{ "mensagem": "O ID deve ser um número válido" }`
+**404 Not Found**
 
-**404 Not Found**: `{ "mensagem": "Doação não encontrada" }`
-
-**500 Internal Server Error**: a doação possui registros vinculados que impedem a exclusão (veja [Limitações](#-limitações-conhecidas-e-próximos-passos)).
+```json
+{ "mensagem": "Doação não encontrada" }
+```
 
 ### Rotas inexistentes
 
-Qualquer rota que não exista retorna **404 Not Found**:
+Qualquer rota que não exista retorna:
+
+**404 Not Found**
 
 ```json
 { "mensagem": "Rota não encontrada" }
 ```
 
-### Middlewares
+### Mensagens de erro de validação (400)
+
+| Situação | Mensagem retornada |
+|---|---|
+| Corpo da requisição ausente | `O corpo da requisição não pode estar vazio` |
+| `doador` ausente ou vazio | `O doador é obrigatório` |
+| `item` ausente ou vazio | `O item é obrigatório` |
+| `quantidade` ausente, não numérica ou ≤ 0 | `A quantidade deve ser um número maior que 0` |
+
+---
+
+## 🛡️ Middlewares
 
 | Middleware | Escopo | Função |
 |---|---|---|
 | `express.json()` | Global | Converte o corpo da requisição em JSON (sem ele, `req.body` fica `undefined`) |
 | `registrarLog` | Global | Imprime no terminal horário, método HTTP e URL de cada requisição |
+| `validarDoacao` | `POST` e `PUT` | Garante que `doador`, `item` e `quantidade` (número > 0) foram enviados corretamente |
 | Fallback 404 | Final | Captura qualquer rota inexistente e responde `404` em JSON |
 
 Exemplo de saída do log no terminal:
@@ -472,7 +396,7 @@ Exemplo de saída do log no terminal:
 [14:32:25] POST /api/doacoes
 ```
 
-> **Ordem importa:** os middlewares são registrados **antes** das rotas, e o fallback `404` fica **por último**.
+> **Ordem importa:** os middlewares são registrados **antes** das rotas, e o fallback `404` fica **por último**. Todo middleware chama `next()` para liberar a requisição.
 
 ---
 
@@ -482,34 +406,23 @@ Configure o corpo das requisições `POST` e `PUT` como **Body → raw → JSON*
 
 | # | Método | URL | Body (JSON) | Resposta esperada |
 |---|---|---|---|---|
-| 1 | `GET` | `http://localhost:3000/api/doacoes` | — | `200 OK` + lista das doações vinda do banco |
+| 1 | `GET` | `http://localhost:3000/api/doacoes` | — | `200 OK` + lista completa |
 | 2 | `GET` | `http://localhost:3000/api/doacoes/1` | — | `200 OK` + doação de id 1 |
 | 3 | `GET` | `http://localhost:3000/api/doacoes/999` | — | `404 Not Found` |
-| 4 | `GET` | `http://localhost:3000/api/doacoes/abc` | — | `400 Bad Request` |
-| 5 | `POST` | `http://localhost:3000/api/doacoes` | `{"aluno_id":2,"campanha_id":1,"data":"2026-10-27"}` | `201 Created` + registro criado (conferir no pgAdmin) |
-| 6 | `POST` | `http://localhost:3000/api/doacoes` | `{}` | `400 Bad Request` |
-| 7 | `PUT` | `http://localhost:3000/api/doacoes/4` | `{"status":"Aprovada","horas_concedidas":8}` | `200 OK` + registro atualizado |
-| 8 | `DELETE` | `http://localhost:3000/api/doacoes/4` | — | `200 OK` + mensagem de remoção |
+| 4 | `POST` | `http://localhost:3000/api/doacoes` | `{"doador":"Ana","item":"Agasalho","quantidade":3}` | `201 Created` + objeto criado |
+| 5 | `POST` | `http://localhost:3000/api/doacoes` | `{}` ou sem campo obrigatório | `400 Bad Request` (middleware) |
+| 6 | `PUT` | `http://localhost:3000/api/doacoes/1` | `{"doador":"Maria","item":"Cesta Padrão","quantidade":5}` | `200 OK` + objeto atualizado |
+| 7 | `DELETE` | `http://localhost:3000/api/doacoes/1` | — | `200 OK` + mensagem de remoção |
 
-> O navegador só faz requisições `GET`. Use o Postman para `POST`, `PUT` e `DELETE` e acompanhe o terminal para ver o log funcionando.
-> Os testes `PUT`/`DELETE` usam o `id 4` (o registro criado no teste 5). Ajuste se o seu `POST` retornar outro `id`.
+> O navegador só faz requisições `GET`. Use o Postman para `POST`, `PUT` e `DELETE`, e acompanhe o terminal para ver o middleware de log funcionando.
 
 ---
 
-## 💾 Prova de persistência
+## 🗄️ Banco de dados (PostgreSQL)
 
-Regra de ouro do desafio: a API **não usa mais array em memória**. Para comprovar:
+O banco foi modelado no **Desafio Técnico - Aula 10** e contém **12 tabelas**. O script completo está em [`database/script.sql`](database/script.sql).
 
-1. Faça um `POST /api/doacoes` e anote o `id` retornado.
-2. Abra o pgAdmin e consulte a tabela `doacoes` (clique direito → **View/Edit Data → All Rows**): o registro está lá.
-3. Pare o servidor (`Ctrl + C`) e inicie novamente com `npm run dev`.
-4. Faça um `GET /api/doacoes`: o registro cadastrado **continua aparecendo** no JSON e no pgAdmin.
-
----
-
-## 🧬 Modelagem do banco (PostgreSQL)
-
-O banco foi modelado no **Desafio Técnico - Aula 10** e contém **12 tabelas**. Script: [`Criacao_banco_postgres_projeto_integrador.sql`](Criacao_banco_postgres_projeto_integrador.sql) — Diagrama: [`Diagrama projeto integrador.png`](Diagrama%20projeto%20integrador.png).
+### Diagrama de entidades e relacionamentos
 
 ```mermaid
 erDiagram
@@ -528,6 +441,8 @@ erDiagram
     funcionarios ||--o{ registros_edicao : gera
     doacoes ||--o{ registros_edicao : "é auditada em"
 ```
+
+Diagrama físico completo (com colunas e tipos): [`docs/diagrama.png`](docs/diagrama.png).
 
 ### Tabelas
 
@@ -554,56 +469,96 @@ erDiagram
 | **1:N** | `campanhas` → `itens_prioritarios`, `alunos` → `doacoes`, `campanhas` → `doacoes`, `funcionarios` → `doacoes`, `doacoes` → `anexos`, `doacoes` → `notificacoes`, `funcionarios` → `registros_edicao` |
 | **N:N** | `doacoes` ↔ `itens` (via `doacao_itens`) |
 
-### Consulta usada como base do `GET /api/doacoes`
+### Como executar o script no pgAdmin
+
+1. Instale o **PostgreSQL** e o **pgAdmin 4**.
+2. No pgAdmin, crie um banco de dados (ex.: `doacoes_fmp`).
+3. Clique com o botão direito no banco → **Query Tool**.
+4. Abra o arquivo `database/script.sql` (ícone de pasta) e clique em **Executar** (▶ ou `F5`).
+5. O script apaga as tabelas antigas (`DROP TABLE IF EXISTS`), cria as 12 tabelas, insere os dados de exemplo e roda as consultas.
+
+> ⚠️ O script **apaga e recria** todas as tabelas. Não execute em um banco que já tenha dados que você quer manter.
+
+### Consultas de exemplo (JOIN)
+
+**Doações com aluno e campanha**
 
 ```sql
-SELECT d.id, u.nome AS doador, c.titulo AS campanha,
-       d.status, d.data, d.horas_concedidas, d.local_entrega
+SELECT d.id AS doacao_id, u.nome AS aluno, a.matricula,
+       c.titulo AS campanha, d.data, d.status, d.horas_concedidas
 FROM doacoes d
 JOIN alunos a ON d.aluno_id = a.id
 JOIN usuarios u ON a.id = u.id
-LEFT JOIN campanhas c ON d.campanha_id = c.id
-ORDER BY d.id ASC;
+JOIN campanhas c ON d.campanha_id = c.id;
 ```
 
+**Itens de cada doação (relação N:N)**
+
+```sql
+SELECT d.id AS doacao_id, u.nome AS doador, c.titulo AS campanha,
+       i.nome AS item_doado, i.categoria, di.quantidade
+FROM doacoes d
+JOIN alunos a ON d.aluno_id = a.id
+JOIN usuarios u ON a.id = u.id
+JOIN campanhas c ON d.campanha_id = c.id
+JOIN doacao_itens di ON d.id = di.doacao_id
+JOIN itens i ON di.item_id = i.id;
+```
+
+### Como a API atual se relaciona com o banco
+
+O modelo da API (em memória) é mais simples que o do banco. Na integração será preciso mapear:
+
+| Campo da API | Onde fica no banco |
+|---|---|
+| `id` | `doacoes.id` |
+| `doador` | `usuarios.nome` (via `doacoes.aluno_id` → `alunos` → `usuarios`) |
+| `item` | `itens.nome` (via `doacao_itens`) |
+| `quantidade` | `doacao_itens.quantidade` |
+| `status` | `doacoes.status` (no banco: `Pendente`, `Aprovada`...) |
+
 ---
 
-## ✅ Checklist do desafio (Aula 11)
+## ⚠️ Limitações conhecidas
 
-- [x] Banco criado no pgAdmin a partir do script SQL, com PKs, FKs e tabela de junção N:N
-- [x] Dados de teste cadastrados (via `INSERT` no script)
-- [x] Driver `pg` instalado
-- [x] Conexão configurada em arquivo separado (`db.js`)
-- [x] Credenciais no `.env` (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`)
-- [x] `.env` protegido pelo `.gitignore`
-- [x] `GET` (listar) e `GET` por id com `req.params`
-- [x] `POST` com `INSERT` e `req.body`
-- [x] `PUT` com `UPDATE` (`req.body` + `req.params`)
-- [x] `DELETE` com `req.params`
-- [x] Status codes (200, 201, 400, 404, 500) e `try/catch`
-- [x] Sem array em memória: persistência real no PostgreSQL
-- [x] README com tabela de endpoints e instruções de banco (`.env` e script `.sql`)
-
----
-
-## ⚠️ Limitações conhecidas e próximos passos
-
-**Limitações**
-
-- **`DELETE` de doações com registros vinculados:** as doações de teste `1`, `2` e `3` possuem registros em `notificacoes` e `registros_edicao`, cujas chaves estrangeiras não têm `ON DELETE CASCADE`. Excluí-las retorna `500`. Doações criadas pelo `POST` (sem vínculos) são removidas normalmente.
-- **IDs inexistentes no `POST`:** enviar um `aluno_id` ou `campanha_id` que não existe retorna `500` (violação de FK), e não `400`.
-- **`PUT` sem validação de corpo:** um `PUT` com corpo vazio responde `200` sem alterar nada.
-- **API cobre apenas `doacoes`:** as demais tabelas existem no banco, mas ainda não têm rotas.
+- **API sem banco:** os dados da API vivem em memória e são perdidos ao reiniciar o servidor (inclusive a cada alteração salva no modo `npm run dev`). O PostgreSQL está modelado, mas ainda não conectado.
+- **Modelos diferentes:** a API usa `doador`/`item`/`quantidade` em texto livre, enquanto o banco é normalizado (ver tabela de mapeamento acima).
+- **Validação antes da busca no `PUT`:** como `validarDoacao` roda antes da rota, um `PUT` com corpo inválido em um ID inexistente retorna `400` (e não `404`).
 - **Sem autenticação:** qualquer cliente pode acessar todas as rotas.
 - **Sem testes automatizados:** os testes são manuais, via Postman.
 
-**Próximos passos**
+---
 
+## 🗺️ Próximos passos
+
+- [ ] Conectar a API ao PostgreSQL (ex.: biblioteca `pg`) usando variáveis no `.env`;
+- [ ] Adaptar as rotas para ler e gravar nas tabelas do banco;
 - [ ] Reorganizar o código em camadas (rotas, controllers, middlewares);
-- [ ] Criar rotas CRUD para alunos, campanhas e itens;
-- [ ] Cadastrar os itens de cada doação pela API (`doacao_itens`);
+- [ ] Permitir alterar o `status` da doação;
 - [ ] Implementar autenticação (a tabela `usuarios` já prevê senha e bloqueio por tentativas);
 - [ ] Conectar a API ao front-end do projeto.
+
+---
+
+## 📝 Status atual
+
+**API v2 concluída + banco de dados PostgreSQL modelado.**
+
+- [x] Estrutura Node.js / Express
+- [x] Variáveis de ambiente com `.env` e `dotenv`
+- [x] `.gitignore` protegendo `.env` e `node_modules`
+- [x] Execução com Nodemon (`npm run dev`)
+- [x] Middleware de log
+- [x] Middleware de validação (POST e PUT)
+- [x] Rotas `GET /`, `GET /api/doacoes` e `GET /api/doacoes/:id`
+- [x] Rotas `POST`, `PUT` e `DELETE`
+- [x] Tratamento de rotas inexistentes (404)
+- [x] Status codes HTTP (200, 201, 400, 404)
+- [x] Modelagem do banco (conceitual, lógica e física)
+- [x] Script SQL com DDL, DML e consultas JOIN em `database/script.sql`
+- [x] Diagrama do banco
+- [x] Documentação no README
+- [ ] Integração API ↔ PostgreSQL
 
 ---
 
