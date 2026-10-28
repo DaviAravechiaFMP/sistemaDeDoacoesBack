@@ -1,4 +1,3 @@
-
 require("dotenv").config();
 
 const express = require("express");
@@ -7,7 +6,9 @@ const pool = require("./db");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Middleware para processar JSON (Deve vir antes das rotas)
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Registro das requisições recebidas
 app.use((req, res, next) => {
@@ -78,8 +79,7 @@ app.get("/", (req, res) => {
     });
 });
 
-// GET /api/doacoes
-// Lista as doações cadastradas no banco
+// GET /api/doacoes - Lista doações
 app.get("/api/doacoes", async (req, res) => {
     try {
         const resultado = await pool.query(`
@@ -109,8 +109,7 @@ app.get("/api/doacoes", async (req, res) => {
     }
 });
 
-// GET /api/doacoes/:id
-// Busca uma doação específica
+// GET /api/doacoes/:id - Busca doação por ID
 app.get("/api/doacoes/:id", async (req, res) => {
     const { id } = req.params;
 
@@ -154,8 +153,7 @@ app.get("/api/doacoes/:id", async (req, res) => {
     }
 });
 
-// POST /api/doacoes
-// Cadastra uma doação no PostgreSQL
+// POST /api/doacoes - Cadastra uma doação
 app.post("/api/doacoes", async (req, res) => {
     const erroValidacao = validarDoacao(req.body);
 
@@ -196,7 +194,6 @@ app.post("/api/doacoes", async (req, res) => {
     } catch (erro) {
         console.error("Erro ao cadastrar doação:", erro.message);
 
-        // Violação de chave estrangeira
         if (erro.code === "23503") {
             return res.status(400).json({
                 mensagem: "Aluno ou campanha informado não existe no banco."
@@ -209,8 +206,7 @@ app.post("/api/doacoes", async (req, res) => {
     }
 });
 
-// PUT /api/doacoes/:id
-// Atualiza os dados permitidos de uma doação
+// PUT /api/doacoes/:id - Atualiza uma doação
 app.put("/api/doacoes/:id", async (req, res) => {
     const { id } = req.params;
 
@@ -220,51 +216,18 @@ app.put("/api/doacoes/:id", async (req, res) => {
         });
     }
 
-    const { status, local_entrega, horas_concedidas } = req.body;
-
-    if (
-        !req.body ||
-        typeof req.body !== "object" ||
-        Array.isArray(req.body)
-    ) {
+    if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
         return res.status(400).json({
             mensagem: "Envie os campos da atualização em formato JSON."
         });
     }
 
-    if (
-        status !== undefined &&
-        (typeof status !== "string" || status.trim() === "")
-    ) {
-        return res.status(400).json({
-            mensagem: "status deve ser um texto não vazio."
-        });
-    }
+    const { aluno_id, campanha_id, data, status, local_entrega, horas_concedidas } = req.body;
 
     if (
-        local_entrega !== undefined &&
-        typeof local_entrega !== "string"
-    ) {
-        return res.status(400).json({
-            mensagem: "local_entrega deve ser um texto."
-        });
-    }
-
-    if (
-        horas_concedidas !== undefined &&
-        horas_concedidas !== null &&
-        (
-            typeof horas_concedidas !== "number" ||
-            !Number.isFinite(horas_concedidas) ||
-            horas_concedidas < 0
-        )
-    ) {
-        return res.status(400).json({
-            mensagem: "horas_concedidas deve ser um número não negativo ou nulo."
-        });
-    }
-
-    if (
+        aluno_id === undefined &&
+        campanha_id === undefined &&
+        data === undefined &&
         status === undefined &&
         local_entrega === undefined &&
         horas_concedidas === undefined
@@ -278,15 +241,21 @@ app.put("/api/doacoes/:id", async (req, res) => {
         const resultado = await pool.query(`
             UPDATE doacoes
             SET
-                status = COALESCE($1, status),
-                local_entrega = COALESCE($2, local_entrega),
-                horas_concedidas = COALESCE($3, horas_concedidas)
-            WHERE id = $4
+                aluno_id = COALESCE($1, aluno_id),
+                campanha_id = COALESCE($2, campanha_id),
+                data = COALESCE($3, data),
+                status = COALESCE($4, status),
+                local_entrega = COALESCE($5, local_entrega),
+                horas_concedidas = COALESCE($6, horas_concedidas)
+            WHERE id = $7
             RETURNING *
         `, [
-            status === undefined ? null : status.trim(),
-            local_entrega === undefined ? null : local_entrega,
-            horas_concedidas === undefined ? null : horas_concedidas,
+            aluno_id ? Number(aluno_id) : null,
+            campanha_id ? Number(campanha_id) : null,
+            data || null,
+            status ? status.trim() : null,
+            local_entrega || null,
+            horas_concedidas !== undefined ? horas_concedidas : null,
             Number(id)
         ]);
 
@@ -302,14 +271,20 @@ app.put("/api/doacoes/:id", async (req, res) => {
         });
     } catch (erro) {
         console.error("Erro ao atualizar doação:", erro.message);
+
+        if (erro.code === "23503") {
+            return res.status(400).json({
+                mensagem: "Aluno ou campanha informado não existe no banco."
+            });
+        }
+
         return res.status(500).json({
             mensagem: "Erro interno ao atualizar a doação."
         });
     }
 });
 
-// DELETE /api/doacoes/:id
-// Exclui uma doação do PostgreSQL
+// DELETE /api/doacoes/:id - Exclui uma doação
 app.delete("/api/doacoes/:id", async (req, res) => {
     const { id } = req.params;
 
@@ -339,11 +314,9 @@ app.delete("/api/doacoes/:id", async (req, res) => {
     } catch (erro) {
         console.error("Erro ao excluir doação:", erro.message);
 
-        // A doação pode estar vinculada a registros de outras tabelas
         if (erro.code === "23503") {
             return res.status(400).json({
-                mensagem:
-                    "Não foi possível excluir: existem registros relacionados a esta doação."
+                mensagem: "Não foi possível excluir: existem registros relacionados a esta doação."
             });
         }
 
@@ -353,14 +326,14 @@ app.delete("/api/doacoes/:id", async (req, res) => {
     }
 });
 
-// Resposta para rotas inexistentes
+// Rota 404
 app.use((req, res) => {
     return res.status(404).json({
         mensagem: "Rota não encontrada."
     });
 });
 
-// Verifica a conexão antes de iniciar o servidor
+// Inicia o servidor
 async function iniciarServidor() {
     try {
         await pool.query("SELECT 1");
@@ -370,10 +343,7 @@ async function iniciarServidor() {
             console.log(`Servidor rodando em http://localhost:${PORT}`);
         });
     } catch (erro) {
-        console.error(
-            "Não foi possível conectar ao PostgreSQL:",
-            erro.message
-        );
+        console.error("Não foi possível conectar ao PostgreSQL:", erro.message);
         process.exit(1);
     }
 }
