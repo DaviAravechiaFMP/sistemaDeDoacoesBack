@@ -2,7 +2,7 @@ require("dotenv").config();
 
 const express = require("express");
 const pool = require("./db");
-
+const { validarDoacao } = require("./validarDoacao");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -154,7 +154,7 @@ app.get("/api/doacoes/:id", async (req, res) => {
 });
 
 // POST /api/doacoes - Cadastra uma doação
-app.post("/api/doacoes", async (req, res) => {
+app.post("/api/doacoes", validarDoacao, async (req, res) => {
     const erroValidacao = validarDoacao(req.body);
 
     if (erroValidacao) {
@@ -207,7 +207,7 @@ app.post("/api/doacoes", async (req, res) => {
 });
 
 // PUT /api/doacoes/:id - Atualiza uma doação
-app.put("/api/doacoes/:id", async (req, res) => {
+app.put("/api/doacoes/:id", validarDoacao, async (req, res) => {
     const { id } = req.params;
 
     if (!validarId(id)) {
