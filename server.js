@@ -1,275 +1,57 @@
+// ─── Bootstrap ───────────────────────────────────────────────────────────────
 require("dotenv").config();
 
-const express = require("express");
-const pool = require("./db");
-const validar = require("./middlewares/validar");
-const { doacaoSchema, doacaoUpdateSchema } = require("./schemas/doacao");
-const { validarDoacao } = require("./validarDoacao");
-const app = express();
+const express    = require("express");
+const pool       = require("./db");
+const authRouter = require("./routes/auth");
+const doacoesRouter = require("./routes/doacoes");
+
+const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware para processar JSON (Deve vir antes das rotas)
+// ─── Middlewares globais ──────────────────────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Registro das requisições recebidas
-app.use((req, res, next) => {
-    console.log(
-        `[${new Date().toLocaleString("pt-BR")}] ${req.method} ${req.url}`
-    );
+// Log de requisições
+app.use((req, _res, next) => {
+    console.log(`[${new Date().toLocaleString("pt-BR")}] ${req.method} ${req.url}`);
     next();
 });
 
-// Verifica se o ID é um inteiro positivo
-function validarId(id) {
-    return /^\d+$/.test(String(id)) && Number(id) > 0;
-}
-
-// Rota inicial
-app.get("/", (req, res) => {
+// ─── Rotas públicas ───────────────────────────────────────────────────────────
+app.get("/", (_req, res) => {
     res.status(200).json({
-        mensagem: "API do Sistema de Doações FMP conectada ao PostgreSQL."
+        mensagem: "API do Sistema de Doações FMP conectada ao PostgreSQL.",
+        versao:   "2.0.0"
     });
 });
 
-// GET /api/doacoes - Lista doações
-app.get("/api/doacoes", async (req, res) => {
-    try {
-        const resultado = await pool.query(`
-            SELECT
-                d.id,
-                d.aluno_id,
-                u.nome AS doador,
-                d.campanha_id,
-                c.titulo AS campanha,
-                d.data,
-                d.status,
-                d.horas_concedidas,
-                d.local_entrega
-            FROM doacoes d
-            INNER JOIN alunos a ON a.id = d.aluno_id
-            INNER JOIN usuarios u ON u.id = a.id
-            LEFT JOIN campanhas c ON c.id = d.campanha_id
-            ORDER BY d.id ASC
-        `);
+// Autenticação (registro + login) — sem JWT
+app.use("/api/auth", authRouter);
 
-        return res.status(200).json(resultado.rows);
-    } catch (erro) {
-        console.error("Erro ao listar doações:", erro.message);
-        return res.status(500).json({
-            mensagem: "Erro interno ao consultar as doações."
-        });
-    }
+// ─── Rotas protegidas (exigem JWT) ───────────────────────────────────────────
+app.use("/api/doacoes", doacoesRouter);
+
+// ─── Rota 404 ─────────────────────────────────────────────────────────────────
+app.use((_req, res) => {
+    res.status(404).json({ mensagem: "Rota não encontrada." });
 });
 
-// GET /api/doacoes/:id - Busca doação por ID
-app.get("/api/doacoes/:id", async (req, res) => {
-    const { id } = req.params;
-
-    if (!validarId(id)) {
-        return res.status(400).json({
-            mensagem: "O ID deve ser um número inteiro positivo."
-        });
-    }
-
-    try {
-        const resultado = await pool.query(`
-            SELECT
-                d.id,
-                d.aluno_id,
-                u.nome AS doador,
-                d.campanha_id,
-                c.titulo AS campanha,
-                d.data,
-                d.status,
-                d.horas_concedidas,
-                d.local_entrega
-            FROM doacoes d
-            INNER JOIN alunos a ON a.id = d.aluno_id
-            INNER JOIN usuarios u ON u.id = a.id
-            LEFT JOIN campanhas c ON c.id = d.campanha_id
-            WHERE d.id = $1
-        `, [Number(id)]);
-
-        if (resultado.rows.length === 0) {
-            return res.status(404).json({
-                mensagem: "Doação não encontrada."
-            });
-        }
-
-        return res.status(200).json(resultado.rows[0]);
-    } catch (erro) {
-        console.error("Erro ao buscar doação:", erro.message);
-        return res.status(500).json({
-            mensagem: "Erro interno ao consultar a doação."
-        });
-    }
-});
-
-// POST /api/doacoes - Cadastra uma doação
-app.post("/api/doacoes", validar(doacaoSchema), async (req, res) => {
-    const {
-        aluno_id,
-        campanha_id,
-        data,
-        status,
-        local_entrega
-    } = req.body;
-
-    try {
-        const resultado = await pool.query(`
-            INSERT INTO doacoes
-                (aluno_id, campanha_id, data, status, local_entrega)
-            VALUES ($1, $2, $3, $4, $5)
-            RETURNING *
-        `, [
-            Number(aluno_id),
-            campanha_id ? Number(campanha_id) : null,
-            data,
-            status ? status.trim() : "Pendente",
-            local_entrega !== undefined
-                ? local_entrega
-                : "Recepção Principal FMP"
-        ]);
-
-        return res.status(201).json({
-            mensagem: "Doação cadastrada com sucesso.",
-            doacao: resultado.rows[0]
-        });
-    } catch (erro) {
-        console.error("Erro ao cadastrar doação:", erro.message);
-
-        if (erro.code === "23503") {
-            return res.status(400).json({
-                mensagem: "Aluno ou campanha informado não existe no banco."
-            });
-        }
-
-        return res.status(500).json({
-            mensagem: "Erro interno ao cadastrar a doação."
-        });
-    }
-});
-
-// PUT /api/doacoes/:id - Atualiza uma doação
-app.put("/api/doacoes/:id", validar(doacaoUpdateSchema), async (req, res) => {
-    const { id } = req.params;
-
-    if (!validarId(id)) {
-        return res.status(400).json({
-            mensagem: "O ID deve ser um número inteiro positivo."
-        });
-    }
-
-    const { status, local_entrega, horas_concedidas } = req.body;
-
-    try {
-        const resultado = await pool.query(`
-            UPDATE doacoes
-            SET
-                aluno_id = COALESCE($1, aluno_id),
-                campanha_id = COALESCE($2, campanha_id),
-                data = COALESCE($3, data),
-                status = COALESCE($4, status),
-                local_entrega = COALESCE($5, local_entrega),
-                horas_concedidas = COALESCE($6, horas_concedidas)
-            WHERE id = $7
-            RETURNING *
-        `, [
-            aluno_id ? Number(aluno_id) : null,
-            campanha_id ? Number(campanha_id) : null,
-            data || null,
-            status ? status.trim() : null,
-            local_entrega || null,
-            horas_concedidas !== undefined ? horas_concedidas : null,
-            Number(id)
-        ]);
-
-        if (resultado.rows.length === 0) {
-            return res.status(404).json({
-                mensagem: "Doação não encontrada."
-            });
-        }
-
-        return res.status(200).json({
-            mensagem: "Doação atualizada com sucesso.",
-            doacao: resultado.rows[0]
-        });
-    } catch (erro) {
-        console.error("Erro ao atualizar doação:", erro.message);
-
-        if (erro.code === "23503") {
-            return res.status(400).json({
-                mensagem: "Aluno ou campanha informado não existe no banco."
-            });
-        }
-
-        return res.status(500).json({
-            mensagem: "Erro interno ao atualizar a doação."
-        });
-    }
-});
-
-// DELETE /api/doacoes/:id - Exclui uma doação
-app.delete("/api/doacoes/:id", async (req, res) => {
-    const { id } = req.params;
-
-    if (!validarId(id)) {
-        return res.status(400).json({
-            mensagem: "O ID deve ser um número inteiro positivo."
-        });
-    }
-
-    try {
-        const resultado = await pool.query(`
-            DELETE FROM doacoes
-            WHERE id = $1
-            RETURNING *
-        `, [Number(id)]);
-
-        if (resultado.rows.length === 0) {
-            return res.status(404).json({
-                mensagem: "Doação não encontrada."
-            });
-        }
-
-        return res.status(200).json({
-            mensagem: "Doação excluída com sucesso.",
-            doacao: resultado.rows[0]
-        });
-    } catch (erro) {
-        console.error("Erro ao excluir doação:", erro.message);
-
-        if (erro.code === "23503") {
-            return res.status(400).json({
-                mensagem: "Não foi possível excluir: existem registros relacionados a esta doação."
-            });
-        }
-
-        return res.status(500).json({
-            mensagem: "Erro interno ao excluir a doação."
-        });
-    }
-});
-
-// Rota 404
-app.use((req, res) => {
-    return res.status(404).json({
-        mensagem: "Rota não encontrada."
-    });
-});
-
-// Inicia o servidor
+// ─── Inicialização ────────────────────────────────────────────────────────────
 async function iniciarServidor() {
     try {
         await pool.query("SELECT 1");
-        console.log("Conexão com PostgreSQL estabelecida.");
+        console.log("✔  Conexão com PostgreSQL estabelecida.");
 
         app.listen(PORT, () => {
-            console.log(`Servidor rodando em http://localhost:${PORT}`);
+            console.log(`✔  Servidor rodando em http://localhost:${PORT}`);
+            console.log(`   POST /api/auth/registrar  — cadastro de usuário`);
+            console.log(`   POST /api/auth/login       — login (retorna JWT)`);
+            console.log(`   GET  /api/doacoes          — listar doações (JWT)`);
         });
     } catch (erro) {
-        console.error("Não foi possível conectar ao PostgreSQL:", erro.message);
+        console.error("✖  Não foi possível conectar ao PostgreSQL:", erro.message);
         process.exit(1);
     }
 }
