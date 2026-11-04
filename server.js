@@ -2,6 +2,8 @@ require("dotenv").config();
 
 const express = require("express");
 const pool = require("./db");
+const validar = require("./middlewares/validar");
+const { doacaoSchema, doacaoUpdateSchema } = require("./schemas/doacao");
 const { validarDoacao } = require("./validarDoacao");
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,55 +23,6 @@ app.use((req, res, next) => {
 // Verifica se o ID é um inteiro positivo
 function validarId(id) {
     return /^\d+$/.test(String(id)) && Number(id) > 0;
-}
-
-// Verifica os campos básicos de uma doação
-function validarDoacao(dados) {
-    if (!dados || typeof dados !== "object" || Array.isArray(dados)) {
-        return "Envie os dados da doação em formato JSON.";
-    }
-
-    if (
-        !Number.isInteger(Number(dados.aluno_id)) ||
-        Number(dados.aluno_id) <= 0
-    ) {
-        return "aluno_id deve ser um número inteiro positivo.";
-    }
-
-    if (
-        dados.campanha_id !== undefined &&
-        dados.campanha_id !== null &&
-        dados.campanha_id !== "" &&
-        (!Number.isInteger(Number(dados.campanha_id)) ||
-            Number(dados.campanha_id) <= 0)
-    ) {
-        return "campanha_id deve ser um número inteiro positivo ou nulo.";
-    }
-
-    if (
-        typeof dados.data !== "string" ||
-        !/^\d{4}-\d{2}-\d{2}$/.test(dados.data) ||
-        Number.isNaN(Date.parse(dados.data)) ||
-        new Date(dados.data).toISOString().slice(0, 10) !== dados.data
-    ) {
-        return "Informe data no formato YYYY-MM-DD com uma data válida.";
-    }
-
-    if (
-        dados.status !== undefined &&
-        (typeof dados.status !== "string" || dados.status.trim() === "")
-    ) {
-        return "status deve ser um texto não vazio.";
-    }
-
-    if (
-        dados.local_entrega !== undefined &&
-        typeof dados.local_entrega !== "string"
-    ) {
-        return "local_entrega deve ser um texto.";
-    }
-
-    return null;
 }
 
 // Rota inicial
@@ -154,15 +107,7 @@ app.get("/api/doacoes/:id", async (req, res) => {
 });
 
 // POST /api/doacoes - Cadastra uma doação
-app.post("/api/doacoes", validarDoacao, async (req, res) => {
-    const erroValidacao = validarDoacao(req.body);
-
-    if (erroValidacao) {
-        return res.status(400).json({
-            mensagem: erroValidacao
-        });
-    }
-
+app.post("/api/doacoes", validar(doacaoSchema), async (req, res) => {
     const {
         aluno_id,
         campanha_id,
@@ -207,7 +152,7 @@ app.post("/api/doacoes", validarDoacao, async (req, res) => {
 });
 
 // PUT /api/doacoes/:id - Atualiza uma doação
-app.put("/api/doacoes/:id", validarDoacao, async (req, res) => {
+app.put("/api/doacoes/:id", validar(doacaoUpdateSchema), async (req, res) => {
     const { id } = req.params;
 
     if (!validarId(id)) {
@@ -216,26 +161,7 @@ app.put("/api/doacoes/:id", validarDoacao, async (req, res) => {
         });
     }
 
-    if (!req.body || typeof req.body !== "object" || Array.isArray(req.body)) {
-        return res.status(400).json({
-            mensagem: "Envie os campos da atualização em formato JSON."
-        });
-    }
-
-    const { aluno_id, campanha_id, data, status, local_entrega, horas_concedidas } = req.body;
-
-    if (
-        aluno_id === undefined &&
-        campanha_id === undefined &&
-        data === undefined &&
-        status === undefined &&
-        local_entrega === undefined &&
-        horas_concedidas === undefined
-    ) {
-        return res.status(400).json({
-            mensagem: "Informe ao menos um campo para atualizar."
-        });
-    }
+    const { status, local_entrega, horas_concedidas } = req.body;
 
     try {
         const resultado = await pool.query(`
