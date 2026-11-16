@@ -1,8 +1,8 @@
-# 🤝 Sistema de Gestão de Doações FMP — Back-end (API + PostgreSQL + Segurança)
+# 🤝 Sistema de Gestão de Doações FMP — Back-end (API + PostgreSQL + Segurança MVC)
 
 **Projeto Integrador** com API REST em **Node.js**, **Express** e **PostgreSQL**, desenvolvida para intermediar a arrecadação de donativos e o controle de horas complementares no sistema da Faculdade Municipal de Palhoça (FMP).
 
-> **Etapa atual:** API com conexão ativa ao PostgreSQL, CRUD de doações, rotas modulares e **camada de segurança completa** (autenticação JWT, hash de senha com bcrypt, validação de dados com Joi e bloqueio progressivo de login).
+> **Etapa atual (Aula 13):** Arquitetura **MVC completa consolidada em `src/`**, banco de dados PostgreSQL integrado, transações atômicas, rotas protegidas por **JWT**, hash de senha com **bcrypt**, validação de dados com **Joi**, suporte a **CORS**, bloqueio progressivo de login e documentação para deploy na nuvem (**Render**).
 
 ---
 
@@ -10,20 +10,21 @@
 
 - [Sobre o projeto](#-sobre-o-projeto)
 - [Integrantes do grupo](#-integrantes-do-grupo)
-- [O que mudou (Aula 12)](#-o-que-mudou-aula-12)
+- [Documentação do Projeto](#-documentação-do-projeto)
 - [Tecnologias utilizadas](#-tecnologias-utilizadas)
-- [Estrutura do projeto](#-estrutura-do-projeto)
+- [Estrutura do projeto (MVC)](#-estrutura-do-projeto-mvc)
 - [Segurança & Autenticação](#-segurança--autenticação)
-- [Endpoints](#-endpoints)
+- [Endpoints da API](#-endpoints-da-api)
 - [Como executar o projeto](#-como-executar-o-projeto)
 - [Banco de Dados](#-banco-de-dados)
-- [Testes no Postman](#-testes-no-postman)
+- [Testes com Postman](#-testes-com-postman)
+- [Deploy em Produção (Render)](#-deploy-em-produção-render)
 
 ---
 
 ## 📌 Sobre o projeto
 
-O **Sistema de Gestão de Doações FMP** gerencia a arrecadação de donativos (alimentos, agasalhos, materiais escolares, sangue e eletrônicos) promovidos pela comissão responsável (COPER) e por campanhas institucionais. O back-end fornece toda a infraestrutura necessária para cadastro de usuários, autenticação segura, registro de doações e validação de horas complementares.
+O **Sistema de Gestão de Doações FMP** gerencia a arrecadação de donativos (alimentos, agasalhos, materiais escolares, sangue e eletrônicos) promovidos pela comissão responsável (COPER) e por campanhas institucionais. O back-end fornece toda a infraestrutura necessária para cadastro de usuários, autenticação segura, registro de doações, consulta de campanhas e validação de horas complementares.
 
 ---
 
@@ -38,25 +39,15 @@ O **Sistema de Gestão de Doações FMP** gerencia a arrecadação de donativos 
 
 ---
 
-## 🔄 O que mudou (Aula 12)
+## 📚 Documentação do Projeto
 
-| Recurso | Versão Anterior | Versão Atual (v2.0) |
-|---|---|---|
-| **Autenticação** | Sem autenticação (rotas abertas) | **JWT (JSON Web Token)** com expiração via `.env` |
-| **Senhas** | Texto plano no banco | Hash seguro com **bcrypt** (Salt rounds = 10) |
-| **Validação** | Manual básica dentro das rotas | Centralizada com **Joi** e mensagens personalizadas em PT-BR |
-| **Segurança em Login** | Sem restrições | **Bloqueio temporário** após 5 tentativas incorretas (15 min) |
-| **Registro de Aluno** | Inserção simples | **Transação atômica (`BEGIN`/`COMMIT`)** entre `usuarios` e `alunos` |
-| **Arquitetura** | Monolítica no `server.js` | Modular em `routes/`, `middlewares/` e `schemas/` |
-| **Persistência** | Array em memória | **PostgreSQL** com pool de conexões (`pg`) |
+Todos os manuais, contratos e artefatos de entrega estão organizados no diretório [`docs/`](docs/):
 
-### Histórico de versões
-
-| Versão | Destaques |
-|---|---|
-| **v1** | Rotas básicas GET/POST, sem validação |
-| **v2** | CRUD completo, middleware de log e validação, Nodemon, `.env` |
-| **v2.0 (atual)** | Conexão real ao PostgreSQL, JWT, bcrypt, Joi, rotas modulares |
+- 📜 [**Contrato Oficial da API (API_CONTRACT.md)**](docs/API_CONTRACT.md) — Especificação detalhada de endpoints, headers, payload JWT e exemplos exatos de JSON de request e response (sucesso e erros `400`, `401`, `403`, `404`, `409`).
+- 💻 [**Guia de Integração com o Front-end (FRONTEND_INTEGRATION_GUIDE.md)**](docs/FRONTEND_INTEGRATION_GUIDE.md) — Guia pronto para IA ou desenvolvedores Front-end (React + Vite) contendo cliente Axios com interceptor de token, `AuthContext`, `PrivateRoute` e listagem de doações.
+- 🚀 [**Guia de Banco de Dados e Deploy no Render (DATABASE_AND_DEPLOY.md)**](docs/DATABASE_AND_DEPLOY.md) — Passo a passo para provisionamento do PostgreSQL gerenciado e do Web Service Node.js no Render com suporte a SSL e `DATABASE_URL`.
+- 🎬 [**Roteiro do Vídeo de Apresentação (ROTEIRO_VIDEO_E_ENTREGA.md)**](docs/ROTEIRO_VIDEO_E_ENTREGA.md) — Roteiro de 4 minutos cronometrado e dividido igualmente entre Davi, Lucas, Eduardo e Vitor, com checklist da Aula 13.
+- 📮 [**Coleção Postman v2.1**](docs/postman/Sistema_Doacoes_FMP.postman_collection.json) — Arquivo JSON pronto para importar no Postman com todas as requisições configuradas, exemplos de respostas e script para salvar o token JWT automaticamente.
 
 ---
 
@@ -65,35 +56,61 @@ O **Sistema de Gestão de Doações FMP** gerencia a arrecadação de donativos 
 | Tecnologia | Função no projeto |
 |---|---|
 | **Node.js** | Ambiente de execução JavaScript no back-end |
-| **Express** (v5) | Servidor HTTP e roteamento |
+| **Express** (v5) | Servidor HTTP e arquitetura de rotas |
 | **PostgreSQL** & **`pg`** | Banco de dados relacional e driver Pool |
-| **bcrypt** | Criptografia de senhas (hash unidirecional) |
-| **jsonwebtoken (JWT)** | Emissão e verificação de tokens de acesso |
-| **Joi** | Validação de schemas e sanitização do corpo das requisições |
-| **dotenv** | Gerenciamento de variáveis de ambiente |
-| **Nodemon** | Reinício automático do servidor em desenvolvimento |
-| **pgAdmin 4** | Execução e teste do script SQL |
-| **Postman** | Testes manuais das rotas |
+| **cors** | Habilitação de requisições cross-origin para o front-end |
+| **bcrypt** | Criptografia unidirecional de senhas (salt rounds = 10) |
+| **jsonwebtoken (JWT)** | Emissão e verificação de tokens de acesso para rotas protegidas |
+| **Joi** | Validação rigorosa de schemas e sanitização dos dados |
+| **dotenv** | Carregamento de variáveis de ambiente |
+| **Nodemon** | Reinício automático do servidor durante o desenvolvimento |
+| **Postman** | Documentação e testes automatizados de endpoints |
 
 ---
 
-## 📁 Estrutura do projeto
+## 📁 Estrutura do projeto (MVC)
+
+Todo o código-fonte da aplicação está estruturado dentro de `src/`, respeitando a separação de responsabilidades do padrão **MVC**:
 
 ```text
 aulaoito/
-├── middlewares/
-│   ├── autenticar.js    ← Validação de token JWT em rotas protegidas
-│   └── validar.js       ← Middleware genérico para validações Joi
-├── routes/
-│   ├── auth.js          ← Rotas públicas: /api/auth/registrar e /login
-│   └── doacoes.js       ← CRUD /api/doacoes (protegido por JWT)
-├── schemas/
-│   └── index.js         ← Schemas Joi centralizados e mensagens de erro PT-BR
-├── db.js                ← Pool de conexão com o PostgreSQL
-├── server.js            ← Ponto de entrada refatorado da aplicação
-├── .env.example         ← Template de variáveis de ambiente
-├── .env                 ← Variáveis locais (NÃO vai ao GitHub)
-└── .gitignore           ← node_modules/ · .env · *.log
+├── docs/
+│   ├── postman/
+│   │   └── Sistema_Doacoes_FMP.postman_collection.json  ← Coleção v2.1 para testes
+│   ├── API_CONTRACT.md              ← Contrato e esquemas JSON da API
+│   ├── FRONTEND_INTEGRATION_GUIDE.md← Guia para integração em React + Vite
+│   ├── DATABASE_AND_DEPLOY.md       ← Guia de deploy no Render (Web Service + DB)
+│   └── ROTEIRO_VIDEO_E_ENTREGA.md   ← Roteiro do vídeo da Aula 13 e checklist
+├── src/
+│   ├── config/
+│   │   └── db.js                    ← Pool PostgreSQL com suporte a DATABASE_URL e SSL
+│   ├── controllers/
+│   │   ├── authController.js        ← Lógica de registro e login com bloqueio
+│   │   ├── campanhaController.js    ← Controller para listagem de campanhas
+│   │   └── doacaoController.js      ← CRUD de doações e validação de regras
+│   ├── middlewares/
+│   │   ├── autenticar.js            ← Verificação de JWT no cabeçalho Authorization
+│   │   └── validar.js               ← Middleware genérico para validação com Joi
+│   ├── models/
+│   │   ├── campanhaModel.js         ← Queries SQL de campanhas
+│   │   ├── doacaoModel.js           ← Queries SQL de doações (JOINs e CRUD)
+│   │   └── usuarioModel.js          ← Transações atômicas e consultas de usuários
+│   ├── routes/
+│   │   ├── authRoutes.js            ← Rotas públicas de login e registro
+│   │   ├── campanhaRoutes.js        ← Rotas protegidas de campanhas
+│   │   └── doacaoRoutes.js          ← Rotas protegidas de doações
+│   ├── schemas/
+│   │   └── index.js                 ← Schemas Joi centralizados e mensagens PT-BR
+│   └── app.js                       ← Instância Express, CORS e montagem de rotas
+├── Criacao_banco_postgres_projeto_integrador.sql ← DDL, DML e carga inicial do banco
+├── Diagrama projeto integrador.png   ← Diagrama relacional das 12 tabelas
+├── .env.example                     ← Template de variáveis de ambiente
+├── .env                             ← Variáveis locais (protegido no .gitignore)
+├── .gitignore                       ← Ignora node_modules, .env e logs
+├── package.json                     ← Scripts e dependências do projeto
+├── package-lock.json                ← Lockfile de dependências
+├── README.md                        ← Documentação principal
+└── server.js                        ← Ponto de entrada (Bootstrap e conexão ao banco)
 ```
 
 ---
@@ -106,13 +123,13 @@ aulaoito/
 flowchart TD
     A["POST /api/auth/login"] --> B["Joi valida email + senha"]
     B -->|Inválido| C["400 Bad Request"]
-    B -->|Válido| D["Busca usuário no PostgreSQL"]
+    B -->|Válido| D["usuarioModel.buscarPorEmail"]
     D -->|Não encontrado| E["401 Credenciais inválidas"]
     D -->|Encontrado| F{"Conta bloqueada?"}
     F -->|Sim| G["403 Bloqueada por N min"]
     F -->|Não| H["bcrypt.compare(senha, hash)"]
     H -->|Incorreta| I["Incrementa tentativas_falhas"]
-    I -->|5ª falha| J["Bloqueia conta 15 min — 403"]
+    I -->|5ª falha| J["Bloqueia conta 15 min (403)"]
     I -->|Abaixo do limite| K["401 + tentativas_restantes"]
     H -->|Correta| L["Zera tentativas e emite JWT"]
     L --> M["200 OK + token JWT"]
@@ -122,105 +139,66 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    Req["Requisição a Rota Protegida"] --> MW["autenticar.js"]
+    Req["Requisição a Rota Protegida"] --> MW["src/middlewares/autenticar.js"]
     MW -->|Sem token| A1["401 Token não informado"]
     MW -->|Token expirado| A2["401 Token expirado"]
     MW -->|Token inválido| A3["401 Token inválido"]
-    MW -->|Token válido| Next["Injeta req.usuario e chama Handler"]
+    MW -->|Token válido| Next["Injeta req.usuario e chama Controller"]
 ```
-
-### Detalhes de cada camada
-
-| Arquivo | Biblioteca | Responsabilidade |
-|---|---|---|
-| `schemas/index.js` | **Joi** | Define as regras de cada campo (`registroSchema`, `loginSchema`, `doacaoSchema`, `doacaoUpdateSchema`) com mensagens em PT-BR |
-| `middlewares/validar.js` | **Joi** | Factory de middleware: recebe um schema, valida `req.body` e substitui pelos dados normalizados |
-| `middlewares/autenticar.js` | **jsonwebtoken** | Lê `Authorization: Bearer <token>`, verifica com `jwt.verify()` e popula `req.usuario` |
-| `routes/auth.js` | **bcrypt + jwt** | Registro com hash (`bcrypt.hash`), login com comparação (`bcrypt.compare`) e emissão do token |
-| `routes/doacoes.js` | — | CRUD completo, todas as rotas protegidas por `autenticar` |
 
 ---
 
-## 🔌 Endpoints
+## 🔌 Endpoints da API
 
-### Públicos (Sem autenticação)
+Consulte os exemplos completos de JSON de request e response em [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md).
 
-| Método | Rota | Descrição | Status |
+### Públicos (Sem necessidade de Token)
+
+| Método | Rota | Descrição | Status Codes |
 |---|---|---|---|
-| `GET` | `/` | Health-check da API | `200` |
-| `POST` | `/api/auth/registrar` | Cadastra novo usuário + aluno em transação atômica | `201` / `400` / `409` |
-| `POST` | `/api/auth/login` | Autentica o usuário e devolve o JWT | `200` / `400` / `401` / `403` |
+| `GET` | `/` | Health-check da API e versão | `200` |
+| `POST` | `/api/auth/registrar` | Cadastra novo usuário + aluno (transação atômica) | `201`, `400`, `409` |
+| `POST` | `/api/auth/login` | Autentica com bcrypt, bloqueio progressivo e emite JWT | `200`, `400`, `401`, `403` |
 
 ### Protegidos — Exigem cabeçalho `Authorization: Bearer <token>`
 
-| Método | Rota | Descrição | Status |
+| Método | Rota | Descrição | Status Codes |
 |---|---|---|---|
-| `GET` | `/api/doacoes` | Lista todas as doações gravadas no banco | `200` / `401` |
-| `GET` | `/api/doacoes/:id` | Busca uma doação específica por ID | `200` / `401` / `404` |
-| `POST` | `/api/doacoes` | Cadastra uma nova doação no banco | `201` / `400` / `401` |
-| `PUT` | `/api/doacoes/:id` | Atualiza status / local / horas de uma doação | `200` / `400` / `401` / `404` |
-| `DELETE` | `/api/doacoes/:id` | Remove uma doação pelo ID | `200` / `401` / `404` |
-
-### Exemplos de corpo da requisição
-
-**`POST /api/auth/registrar`**
-```json
-{
-  "nome": "Ana Costa",
-  "email": "ana@aluno.fmpsc.edu.br",
-  "senha": "segura123",
-  "cpf": "123.456.789-00"
-}
-```
-
-**`POST /api/auth/login`** → retorna `token`
-```json
-{ "email": "ana@aluno.fmpsc.edu.br", "senha": "segura123" }
-```
-
-**`POST /api/doacoes`** (com `Authorization: Bearer <token>`)
-```json
-{
-  "aluno_id": 2,
-  "campanha_id": 1,
-  "data": "2026-11-03",
-  "status": "Pendente",
-  "local_entrega": "Recepção Principal FMP"
-}
-```
+| `GET` | `/api/doacoes` | Lista doações com dados do doador e da campanha | `200`, `401` |
+| `GET` | `/api/doacoes/:id` | Busca uma doação específica pelo ID | `200`, `400`, `401`, `404` |
+| `POST` | `/api/doacoes` | Registra uma nova doação (validada por Joi) | `201`, `400`, `401` |
+| `PUT` | `/api/doacoes/:id` | Atualiza status/local/horas de uma doação | `200`, `400`, `401`, `404` |
+| `DELETE` | `/api/doacoes/:id` | Exclui uma doação pelo ID | `200`, `400`, `401`, `404` |
+| `GET` | `/api/campanhas` | Lista todas as campanhas institucionais ativas | `200`, `401` |
 
 ---
 
 ## 🚀 Como executar o projeto
 
 ### Pré-requisitos
-
-- [Node.js](https://nodejs.org/) **18 ou superior**
-- PostgreSQL com o banco criado (execute o script SQL abaixo)
+- [Node.js](https://nodejs.org/) (versão 18 ou superior)
+- PostgreSQL (local ou na nuvem)
 - Git
 
 ### 1. Clonar o repositório
-
 ```bash
 git clone https://github.com/DaviAravechiaFMP/sistemaDeDoacoesBack.git
 cd sistemaDeDoacoesBack
 ```
 
 ### 2. Instalar as dependências
-
 ```bash
 npm install
 ```
 
 ### 3. Configurar as variáveis de ambiente
-
-Copie `.env.example` para `.env` e preencha com suas credenciais:
-
+Copie o template `.env.example` para `.env`:
 ```bash
 cp .env.example .env
 ```
-
+Edite `.env` com suas credenciais:
 ```env
+# Conexão Local (ou use DATABASE_URL para conexão em nuvem com SSL)
 DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres
@@ -229,64 +207,37 @@ DB_NAME=sistema_doacoes
 
 PORT=3000
 
+# Chave secreta e expiração do JWT
 JWT_SECRET=chave_super_secreta_fmp_2026
 JWT_EXPIRES_IN=8h
 ```
 
-> O `.env` está no `.gitignore` e **nunca deve ser enviado ao GitHub**.
-
 ### 4. Executar o servidor
 
-**Desenvolvimento** (Nodemon — reinicia ao salvar):
-
+**Modo Desenvolvimento** (com Nodemon — reinicia ao salvar):
 ```bash
 npm run dev
 ```
 
-**Produção** (Node puro):
-
+**Modo Produção**:
 ```bash
 npm start
 ```
 
 Mensagem esperada no terminal:
-
 ```text
 ✔  Conexão com PostgreSQL estabelecida.
 ✔  Servidor rodando em http://localhost:3000
+   POST /api/auth/registrar  — cadastro de usuário
+   POST /api/auth/login       — login (retorna JWT)
+   GET  /api/doacoes          — listar doações (JWT)
 ```
-
-### Scripts disponíveis
-
-| Comando | O que faz |
-|---|---|
-| `npm start` | Executa `node server.js` |
-| `npm run dev` | Executa `nodemon server.js` |
 
 ---
 
 ## 🗄️ Banco de Dados
 
-O banco foi modelado com **12 tabelas**. O script completo está em [`Criacao_banco_postgres_projeto_integrador.sql`](Criacao_banco_postgres_projeto_integrador.sql).
-
-### Como executar o script no pgAdmin
-
-1. Instale o **PostgreSQL** e o **pgAdmin 4**.
-2. Crie um banco de dados (ex.: `sistema_doacoes`).
-3. Abra o **Query Tool**, cole o script e execute (`F5`).
-
-> ⚠️ O script usa `DROP TABLE IF EXISTS CASCADE` — **apaga e recria** todas as tabelas.
-
-### Garantir campos de segurança na tabela `usuarios`
-
-Se você já tem o banco criado sem os campos de bloqueio, rode:
-
-```sql
-ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS tentativas_falhas INT DEFAULT 0;
-ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS bloqueado_ate TIMESTAMP;
-```
-
-### Diagrama de entidades e relacionamentos
+O banco de dados relacional é estruturado em **12 tabelas** normalizadas. O script DDL/DML integral encontra-se em [`Criacao_banco_postgres_projeto_integrador.sql`](Criacao_banco_postgres_projeto_integrador.sql).
 
 ```mermaid
 erDiagram
@@ -306,63 +257,29 @@ erDiagram
     doacoes ||--o{ registros_edicao : "é auditada em"
 ```
 
-### Tabelas
+---
 
-| Tabela | Função |
-|---|---|
-| `usuarios` | Dados de login e identificação (base para alunos e funcionários) |
-| `alunos` | Especialização de `usuarios`: matrícula, curso e saldo de horas |
-| `funcionarios` | Especialização de `usuarios`: departamento e cargo |
-| `campanhas` | Campanhas de arrecadação, regras de conversão e limite de horas |
-| `itens_prioritarios` | Necessidades específicas de cada campanha |
-| `doacoes` | Registro de cada doação, com status, horas concedidas e responsáveis |
-| `itens` | Catálogo de itens que podem ser doados |
-| `doacao_itens` | Tabela de junção **N:N** entre `doacoes` e `itens` (com `quantidade`) |
-| `anexos` | Comprovantes de cada doação |
-| `certificados` | Certificado emitido para cada doação aprovada |
-| `notificacoes` | Avisos enviados aos alunos |
-| `registros_edicao` | Auditoria das alterações feitas por funcionários |
+## 📊 Testes com Postman
+
+Uma coleção completa e pré-configurada está disponível em:  
+📁 [`docs/postman/Sistema_Doacoes_FMP.postman_collection.json`](docs/postman/Sistema_Doacoes_FMP.postman_collection.json)
+
+**Funcionalidades incluídas na coleção:**
+- Variáveis de coleção `base_url` e `token`.
+- Script automático na aba `Tests` do **Login**: ao realizar login com sucesso, o token JWT retornado é gravado automaticamente na variável `{{token}}`, autenticando instantaneamente todas as demais requisições protegidas.
+- Exemplos de requisições e respostas salvas para cada endpoint.
 
 ---
 
-## 📊 Testes no Postman
+## ☁️ Deploy em Produção (Render)
 
-Configure o corpo das requisições `POST` e `PUT` como **Body → raw → JSON**.
-
-| # | Método | URL | Body / Header | Resposta esperada |
-|---|---|---|---|---|
-| 1 | `POST` | `/api/auth/registrar` | `{"nome":"Ana","email":"ana@aluno.fmpsc.edu.br","senha":"abc123"}` | `201` + usuário criado |
-| 2 | `POST` | `/api/auth/login` | `{"email":"ana@aluno.fmpsc.edu.br","senha":"abc123"}` | `200` + `token` |
-| 3 | `POST` | `/api/auth/login` | senha errada 5× | `403` conta bloqueada |
-| 4 | `GET` | `/api/doacoes` | `Authorization: Bearer <token>` | `200` + lista |
-| 5 | `GET` | `/api/doacoes` | Sem token | `401` |
-| 6 | `POST` | `/api/doacoes` | Token válido + body da doação | `201` |
-| 7 | `PUT` | `/api/doacoes/1` | Token válido + `{"status":"Aprovada"}` | `200` |
-| 8 | `DELETE` | `/api/doacoes/1` | Token válido | `200` |
-
-> Use o token retornado no login e cole no cabeçalho `Authorization` como `Bearer <token>`.
-
----
-
-## 📝 Checklist do projeto
-
-- [x] Estrutura Node.js / Express
-- [x] Variáveis de ambiente com `.env` e `dotenv`
-- [x] `.gitignore` protegendo `.env`, `node_modules/` e `*.log`
-- [x] Conexão com PostgreSQL via pool (`pg`)
-- [x] CRUD completo de doações
-- [x] Middleware de log de requisições
-- [x] Validação com **Joi** (schemas centralizados, mensagens PT-BR)
-- [x] Hash de senha com **bcrypt** (salt rounds = 10)
-- [x] Autenticação com **JWT** (expiração via `.env`)
-- [x] Bloqueio temporário após 5 tentativas falhas de login
-- [x] Transação atômica no registro de novo usuário
-- [x] Rotas modulares (`routes/`) e middlewares separados
-- [x] Modelagem do banco (12 tabelas, DDL/DML, diagrama ER)
-- [x] Documentação no README
+A aplicação está configurada para deploy automático no **Render**:
+- O `src/config/db.js` detecta automaticamente a variável de ambiente `DATABASE_URL` e aplica `ssl: { rejectUnauthorized: false }`.
+- O `cors` permite requisições da aplicação front-end hospedada em qualquer domínio.
+- Passo a passo detalhado disponível em: [`docs/DATABASE_AND_DEPLOY.md`](docs/DATABASE_AND_DEPLOY.md).
 
 ---
 
 ## 📄 Observação
 
-Projeto acadêmico desenvolvido para o **Projeto Integrador** da **Faculdade Municipal de Palhoça (FMP)**.
+Projeto acadêmico desenvolvido para o **Projeto Integrador** do curso de Análise e Desenvolvimento de Sistemas da **Faculdade Municipal de Palhoça (FMP)**.
