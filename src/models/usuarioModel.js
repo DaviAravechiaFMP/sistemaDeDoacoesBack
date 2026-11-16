@@ -88,10 +88,27 @@ async function resetarTentativas(id) {
     );
     return resultado.rows[0];
 }
+/**
+ * Busca o perfil do usuário com os dados de aluno
+ * @param {number|string} id
+ * @returns {Promise<object|undefined>}
+ */
+async function buscarPerfilPorId(id) {
+    const resultado = await pool.query(
+        `SELECT u.id, u.nome, u.email, u.cpf,
+                a.matricula, a.curso, a.saldo_horas
+         FROM usuarios u
+         LEFT JOIN alunos a ON a.id = u.id
+         WHERE u.id = $1`,
+        [id]
+    );
+    return resultado.rows[0];
+}
 
 module.exports = {
     buscarPorEmail,
     registrarAluno,
     registrarTentativaFalha,
-    resetarTentativas
+    resetarTentativas,
+    buscarPerfilPorId
 };

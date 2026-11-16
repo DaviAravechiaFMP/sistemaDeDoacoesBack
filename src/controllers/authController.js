@@ -120,7 +120,30 @@ async function login(req, res) {
     }
 }
 
+/**
+ * Retorna o perfil do usuário logado (dados + matrícula, curso e saldo de horas)
+ */
+async function perfil(req, res) {
+    try {
+        const dados = await usuarioModel.buscarPerfilPorId(req.usuario.id);
+
+        if (!dados) {
+            return res.status(404).json({
+                mensagem: "Usuário não encontrado."
+            });
+        }
+
+        return res.status(200).json(dados);
+    } catch (erro) {
+        console.error("Erro ao buscar perfil:", erro.message);
+        return res.status(500).json({
+            mensagem: "Erro interno ao buscar o perfil."
+        });
+    }
+}
+
 module.exports = {
     registrar,
-    login
+    login,
+    perfil
 };
