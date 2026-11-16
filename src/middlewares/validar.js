@@ -13,7 +13,7 @@ function validar(schema) {
     return (req, res, next) => {
         const { error, value } = schema.validate(req.body ?? {}, {
             abortEarly: false,
-            messages:   mensagens
+            messages: mensagens
         });
 
         if (error) {
@@ -30,4 +30,3 @@ function validar(schema) {
 }
 
 module.exports = validar;
-

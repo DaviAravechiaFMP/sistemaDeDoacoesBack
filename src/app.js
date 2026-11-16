@@ -1,7 +1,8 @@
 const express = require("express");
 const cors = require("cors");
-const authRouter = require("../routes/auth");
-const doacoesRouter = require("../routes/doacoes");
+const authRoutes = require("./routes/authRoutes");
+const doacaoRoutes = require("./routes/doacaoRoutes");
+const campanhaRoutes = require("./routes/campanhaRoutes");
 
 const app = express();
 
@@ -25,8 +26,9 @@ app.get("/", (_req, res) => {
 });
 
 // Rotas da API
-app.use("/api/auth", authRouter);
-app.use("/api/doacoes", doacoesRouter);
+app.use("/api/auth", authRoutes);
+app.use("/api/doacoes", doacaoRoutes);
+app.use("/api/campanhas", campanhaRoutes);
 
 // Handler 404
 app.use((_req, res) => {
