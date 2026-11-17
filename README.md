@@ -2,7 +2,7 @@
 
 **Projeto Integrador** com API REST em **Node.js**, **Express** e **PostgreSQL**, desenvolvida para intermediar a arrecadação de donativos e o controle de horas complementares no sistema da Faculdade Municipal de Palhoça (FMP).
 
-> **Etapa atual (Aula 13):** Arquitetura **MVC completa consolidada em `src/`**, banco de dados PostgreSQL integrado, transações atômicas, rotas protegidas por **JWT**, hash de senha com **bcrypt**, validação de dados com **Joi**, suporte a **CORS**, bloqueio progressivo de login e documentação para deploy na nuvem (**Render**).
+> **Etapa atual (Aula 13):** Arquitetura **MVC completa consolidada em `src/`**, banco de dados PostgreSQL integrado, transações atômicas, rotas protegidas por **JWT**, hash de senha com **bcrypt**, validação de dados com **Joi**, suporte a **CORS**, bloqueio progressivo de login, endpoints de perfil e catálogo de itens, e documentação para deploy na nuvem (**Render**).
 
 ---
 
@@ -24,7 +24,7 @@
 
 ## 📌 Sobre o projeto
 
-O **Sistema de Gestão de Doações FMP** gerencia a arrecadação de donativos (alimentos, agasalhos, materiais escolares, sangue e eletrônicos) promovidos pela comissão responsável (COPER) e por campanhas institucionais. O back-end fornece toda a infraestrutura necessária para cadastro de usuários, autenticação segura, registro de doações, consulta de campanhas e validação de horas complementares.
+O **Sistema de Gestão de Doações FMP** gerencia a arrecadação de donativos (alimentos, agasalhos, materiais escolares, sangue e eletrônicos) promovidos pela comissão responsável (COPER) e por campanhas institucionais. O back-end fornece toda a infraestrutura necessária para cadastro de usuários, autenticação segura, consulta de perfil do aluno (saldo de horas), registro e gestão de doações, catálogo de itens aceitos e consulta de campanhas vigentes.
 
 ---
 
@@ -35,7 +35,6 @@ O **Sistema de Gestão de Doações FMP** gerencia a arrecadação de donativos 
 | Davi Aravechia |
 | Eduardo Silva |
 | Lucas Alexandre Vieira Schutz |
-| Vitor |
 
 ---
 
@@ -43,10 +42,10 @@ O **Sistema de Gestão de Doações FMP** gerencia a arrecadação de donativos 
 
 Todos os manuais, contratos e artefatos de entrega estão organizados no diretório [`docs/`](docs/):
 
-- 📜 [**Contrato Oficial da API (API_CONTRACT.md)**](docs/API_CONTRACT.md) — Especificação detalhada de endpoints, headers, payload JWT e exemplos exatos de JSON de request e response (sucesso e erros `400`, `401`, `403`, `404`, `409`).
-- 💻 [**Guia de Integração com o Front-end (FRONTEND_INTEGRATION_GUIDE.md)**](docs/FRONTEND_INTEGRATION_GUIDE.md) — Guia pronto para IA ou desenvolvedores Front-end (React + Vite) contendo cliente Axios com interceptor de token, `AuthContext`, `PrivateRoute` e listagem de doações.
+- 📜 [**Contrato Oficial da API (API_CONTRACT.md)**](docs/API_CONTRACT.md) — Especificação detalhada de todos os endpoints, headers, payload JWT e exemplos exatos de JSON de request e response (sucesso e erros `400`, `401`, `403`, `404`, `409`).
+- 💻 [**Guia de Integração com o Front-end (FRONTEND_INTEGRATION_GUIDE.md)**](docs/FRONTEND_INTEGRATION_GUIDE.md) — Guia pronto para IA ou desenvolvedores Front-end (React + Vite) contendo cliente Axios com interceptor de token, `AuthContext`, `PrivateRoute`, perfil do aluno e listagens de doações e itens.
 - 🚀 [**Guia de Banco de Dados e Deploy no Render (DATABASE_AND_DEPLOY.md)**](docs/DATABASE_AND_DEPLOY.md) — Passo a passo para provisionamento do PostgreSQL gerenciado e do Web Service Node.js no Render com suporte a SSL e `DATABASE_URL`.
-- 🎬 [**Roteiro do Vídeo de Apresentação (ROTEIRO_VIDEO_E_ENTREGA.md)**](docs/ROTEIRO_VIDEO_E_ENTREGA.md) — Roteiro de 4 minutos cronometrado e dividido igualmente entre Davi, Lucas, Eduardo e Vitor, com checklist da Aula 13.
+- 🎬 [**Roteiro do Vídeo de Apresentação (ROTEIRO_VIDEO_E_ENTREGA.md)**](docs/ROTEIRO_VIDEO_E_ENTREGA.md) — Roteiro de 4 minutos cronometrado e dividido em 3 partes de 1m20s (Davi, Lucas e Eduardo), com checklist da Aula 13.
 - 📮 [**Coleção Postman v2.1**](docs/postman/Sistema_Doacoes_FMP.postman_collection.json) — Arquivo JSON pronto para importar no Postman com todas as requisições configuradas, exemplos de respostas e script para salvar o token JWT automaticamente.
 
 ---
@@ -56,7 +55,7 @@ Todos os manuais, contratos e artefatos de entrega estão organizados no diretó
 | Tecnologia | Função no projeto |
 |---|---|
 | **Node.js** | Ambiente de execução JavaScript no back-end |
-| **Express** (v5) | Servidor HTTP e arquitetura de rotas |
+| **Express** (v5) | Servidor HTTP e arquitetura de rotas modulares |
 | **PostgreSQL** & **`pg`** | Banco de dados relacional e driver Pool |
 | **cors** | Habilitação de requisições cross-origin para o front-end |
 | **bcrypt** | Criptografia unidirecional de senhas (salt rounds = 10) |
@@ -76,7 +75,7 @@ Todo o código-fonte da aplicação está estruturado dentro de `src/`, respeita
 aulaoito/
 ├── docs/
 │   ├── postman/
-│   │   └── Sistema_Doacoes_FMP.postman_collection.json  ← Coleção v2.1 para testes
+│   │   └── Sistema_Doacoes_FMP.postman_collection.json  ← Coleção v2.1 completa
 │   ├── API_CONTRACT.md              ← Contrato e esquemas JSON da API
 │   ├── FRONTEND_INTEGRATION_GUIDE.md← Guia para integração em React + Vite
 │   ├── DATABASE_AND_DEPLOY.md       ← Guia de deploy no Render (Web Service + DB)
@@ -85,20 +84,23 @@ aulaoito/
 │   ├── config/
 │   │   └── db.js                    ← Pool PostgreSQL com suporte a DATABASE_URL e SSL
 │   ├── controllers/
-│   │   ├── authController.js        ← Lógica de registro e login com bloqueio
+│   │   ├── authController.js        ← Lógica de registro, login e perfil do usuário
 │   │   ├── campanhaController.js    ← Controller para listagem de campanhas
-│   │   └── doacaoController.js      ← CRUD de doações e validação de regras
+│   │   ├── doacaoController.js      ← CRUD de doações e validação de regras
+│   │   └── itemController.js        ← Controller para catálogo de itens
 │   ├── middlewares/
 │   │   ├── autenticar.js            ← Verificação de JWT no cabeçalho Authorization
 │   │   └── validar.js               ← Middleware genérico para validação com Joi
 │   ├── models/
 │   │   ├── campanhaModel.js         ← Queries SQL de campanhas
 │   │   ├── doacaoModel.js           ← Queries SQL de doações (JOINs e CRUD)
-│   │   └── usuarioModel.js          ← Transações atômicas e consultas de usuários
+│   │   ├── itemModel.js             ← Queries SQL de itens de doação
+│   │   └── usuarioModel.js          ← Transações atômicas, login e dados de perfil
 │   ├── routes/
-│   │   ├── authRoutes.js            ← Rotas públicas de login e registro
+│   │   ├── authRoutes.js            ← Rotas de auth (registro, login, perfil)
 │   │   ├── campanhaRoutes.js        ← Rotas protegidas de campanhas
-│   │   └── doacaoRoutes.js          ← Rotas protegidas de doações
+│   │   ├── doacaoRoutes.js          ← Rotas protegidas de doações
+│   │   └── itemRoutes.js            ← Rotas protegidas de catálogo de itens
 │   ├── schemas/
 │   │   └── index.js                 ← Schemas Joi centralizados e mensagens PT-BR
 │   └── app.js                       ← Instância Express, CORS e montagem de rotas
@@ -164,12 +166,14 @@ Consulte os exemplos completos de JSON de request e response em [`docs/API_CONTR
 
 | Método | Rota | Descrição | Status Codes |
 |---|---|---|---|
+| `GET` | `/api/auth/perfil` | Consulta perfil e saldo de horas do aluno logado | `200`, `401`, `404` |
 | `GET` | `/api/doacoes` | Lista doações com dados do doador e da campanha | `200`, `401` |
 | `GET` | `/api/doacoes/:id` | Busca uma doação específica pelo ID | `200`, `400`, `401`, `404` |
 | `POST` | `/api/doacoes` | Registra uma nova doação (validada por Joi) | `201`, `400`, `401` |
 | `PUT` | `/api/doacoes/:id` | Atualiza status/local/horas de uma doação | `200`, `400`, `401`, `404` |
 | `DELETE` | `/api/doacoes/:id` | Exclui uma doação pelo ID | `200`, `400`, `401`, `404` |
 | `GET` | `/api/campanhas` | Lista todas as campanhas institucionais ativas | `200`, `401` |
+| `GET` | `/api/itens` | Lista o catálogo de itens disponíveis para doação | `200`, `401` |
 
 ---
 
@@ -267,7 +271,7 @@ Uma coleção completa e pré-configurada está disponível em:
 **Funcionalidades incluídas na coleção:**
 - Variáveis de coleção `base_url` e `token`.
 - Script automático na aba `Tests` do **Login**: ao realizar login com sucesso, o token JWT retornado é gravado automaticamente na variável `{{token}}`, autenticando instantaneamente todas as demais requisições protegidas.
-- Exemplos de requisições e respostas salvas para cada endpoint.
+- Exemplos de requisições e respostas salvas para cada um dos 11 endpoints.
 
 ---
 

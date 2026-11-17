@@ -44,12 +44,14 @@ O token é assinado com `HMAC-SHA256` utilizando a variável `process.env.JWT_SE
 | `GET` | `/` | Não | Health check e versão da API |
 | `POST` | `/api/auth/registrar` | Não | Cadastro de novo usuário + perfil de aluno |
 | `POST` | `/api/auth/login` | Não | Autenticação, bloqueio progressivo e emissão de JWT |
+| `GET` | `/api/auth/perfil` | **Sim (JWT)** | Consulta dados e saldo de horas do usuário autenticado |
 | `GET` | `/api/doacoes` | **Sim (JWT)** | Lista doações com dados do aluno e campanha |
 | `GET` | `/api/doacoes/:id` | **Sim (JWT)** | Consulta uma doação por ID |
 | `POST` | `/api/doacoes` | **Sim (JWT)** | Registra nova doação |
 | `PUT` | `/api/doacoes/:id` | **Sim (JWT)** | Atualização parcial/total de dados da doação |
 | `DELETE`| `/api/doacoes/:id` | **Sim (JWT)** | Remove uma doação por ID |
 | `GET` | `/api/campanhas` | **Sim (JWT)** | Lista todas as campanhas institucionais |
+| `GET` | `/api/itens` | **Sim (JWT)** | Lista o catálogo de itens disponíveis para doação |
 
 ---
 
@@ -71,7 +73,7 @@ Verifica a integridade da API e a conexão com o banco.
 
 ---
 
-## 2. Autenticação
+## 2. Autenticação & Perfil
 
 ### `POST /api/auth/registrar`
 Cadastra um novo usuário e perfil de aluno via **transação atômica** (`BEGIN`/`COMMIT`).
@@ -112,7 +114,6 @@ Content-Type: application/json
 ```
 
 **Respostas de Erro:**
-
 - `400 Bad Request` (validação de campos):
 ```json
 {
@@ -122,7 +123,6 @@ Content-Type: application/json
   ]
 }
 ```
-
 - `409 Conflict` (duplicidade de e-mail ou CPF):
 ```json
 {
@@ -162,7 +162,6 @@ Content-Type: application/json
 ```
 
 **Respostas de Erro:**
-
 - `401 Unauthorized` (senha incorreta com contador de tentativas):
 ```json
 {
@@ -170,17 +169,47 @@ Content-Type: application/json
   "tentativas_restantes": 4
 }
 ```
-
 - `403 Forbidden` (bloqueio temporário de 15 minutos atingido):
 ```json
 {
   "mensagem": "Muitas tentativas falhas. Conta bloqueada por 15 minuto(s)."
 }
 ```
-*Se a conta já estiver bloqueada:*
+
+---
+
+### `GET /api/auth/perfil`
+Retorna as informações completas do usuário autenticado no token, incluindo matrícula, curso e saldo de horas complementares.
+
+**Headers:**
+```http
+Authorization: Bearer <token_jwt>
+```
+
+**Resposta de Sucesso — `200 OK`**
 ```json
 {
-  "mensagem": "Conta bloqueada temporariamente. Tente novamente em 14 minuto(s)."
+  "id": 2,
+  "nome": "Davi",
+  "email": "davi@aluno.fmpsc.edu.br",
+  "cpf": "111.111.111-11",
+  "matricula": "19875",
+  "curso": "Análise e Desenvolvimento de Sistemas",
+  "saldo_horas": "20.00"
+}
+```
+
+**Respostas de Erro:**
+- `401 Unauthorized` (sem token / token inválido):
+```json
+{
+  "mensagem": "Acesso negado. Token de autenticação não informado."
+}
+```
+- `404 Not Found` (caso o usuário não exista no banco):
+```json
+{
+  "mensagem": "Usuário não encontrado."
 }
 ```
 
@@ -224,33 +253,12 @@ Retorna a listagem de doações com `JOIN` nas tabelas `alunos`, `usuarios` e `c
 ]
 ```
 
-**Respostas de Erro de Autenticação:**
-- `401 Unauthorized` (sem token):
-```json
-{
-  "mensagem": "Acesso negado. Token de autenticação não informado."
-}
-```
-- `401 Unauthorized` (token inválido):
-```json
-{
-  "mensagem": "Token inválido."
-}
-```
-- `401 Unauthorized` (token expirado):
-```json
-{
-  "mensagem": "Token expirado. Faça login novamente."
-}
-```
-
 ---
 
 ### `GET /api/doacoes/:id`
 Busca os detalhes de uma doação específica.
 
-**Parâmetros de Rota:**
-- `id` (obrigatório, inteiro positivo)
+**Parâmetros de Rota:** `id` (inteiro positivo)
 
 **Resposta de Sucesso — `200 OK`**
 ```json
@@ -297,13 +305,6 @@ Registra uma nova doação associada a um aluno e opcionalmente a uma campanha.
 }
 ```
 
-*Regras de Validação (Joi):*
-- `aluno_id`: inteiro positivo, obrigatório.
-- `campanha_id`: inteiro positivo, opcional (permite nulo).
-- `data`: string formato `YYYY-MM-DD` com validação de data real de calendário.
-- `status`: string de 1 a 30 caracteres (padrão `"Pendente"`).
-- `local_entrega`: string até 150 caracteres.
-
 **Resposta de Sucesso — `201 Created`**
 ```json
 {
@@ -349,7 +350,6 @@ Atualiza dados de uma doação existente (`status`, `local_entrega` e/ou `horas_
   "local_entrega": "Coordenação COPER"
 }
 ```
-*Deve conter ao menos 1 campo para atualizar.*
 
 **Resposta de Sucesso — `200 OK`**
 ```json
@@ -363,11 +363,7 @@ Atualiza dados de uma doação existente (`status`, `local_entrega` e/ou `horas_
     "func_validacao_id": 1,
     "data": "2026-06-01T03:00:00.000Z",
     "status": "Aprovada",
-    "foto_evidencia": null,
-    "motivo_reprovacao": null,
     "horas_concedidas": "10.00",
-    "horario_doacao": "08:30:00",
-    "retencao_anos": 10,
     "local_entrega": "Coordenação COPER"
   }
 }
@@ -472,7 +468,60 @@ Authorization: Bearer <token_jwt>
 
 ---
 
-## 5. Rota Inexistente (404 Fallback)
+## 5. Catálogo de Itens
+
+### `GET /api/itens`
+Lista todas as categorias e nomes de itens aceitos para doação cadastrados no banco de dados.
+
+**Headers:**
+```http
+Authorization: Bearer <token_jwt>
+```
+
+**Body:** Nenhum
+
+**Resposta de Sucesso — `200 OK`**
+```json
+[
+  {
+    "id": 1,
+    "nome": "Cobertor Grosso",
+    "categoria": "Agasalho"
+  },
+  {
+    "id": 2,
+    "nome": "Casaco de Frio",
+    "categoria": "Agasalho"
+  },
+  {
+    "id": 3,
+    "nome": "Arroz (Pacote 5kg)",
+    "categoria": "Alimento"
+  },
+  {
+    "id": 4,
+    "nome": "Água Mineral (Fardo)",
+    "categoria": "Alimento"
+  },
+  {
+    "id": 5,
+    "nome": "Caderno Universitário",
+    "categoria": "Material Escolar"
+  }
+]
+```
+
+**Respostas de Erro:**
+- `401 Unauthorized` (sem token / token inválido):
+```json
+{
+  "mensagem": "Acesso negado. Token de autenticação não informado."
+}
+```
+
+---
+
+## 6. Rota Inexistente (404 Fallback)
 
 Para qualquer rota não mapeada na API:
 

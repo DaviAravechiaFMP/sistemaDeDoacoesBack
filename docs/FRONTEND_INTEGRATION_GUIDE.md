@@ -78,7 +78,7 @@ export default api;
 
 ## 🔑 4. Contexto de Autenticação (`src/contexts/AuthContext.jsx`)
 
-Gerencia o estado global de autenticação (usuário logado, token JWT e funções de login/logout):
+Gerencia o estado global de autenticação, usuário logado e busca automática do **Perfil Completo** (`GET /api/auth/perfil`):
 
 ```jsx
 import React, { createContext, useContext, useState, useEffect } from "react";
@@ -88,20 +88,33 @@ const AuthContext = createContext({});
 
 export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
+  const [perfil, setPerfil] = useState(null);
   const [token, setToken] = useState(null);
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    // Restaura sessão salva
-    const tokenSalvo = localStorage.getItem("@DoacoesFMP:token");
-    const usuarioSalvo = localStorage.getItem("@DoacoesFMP:usuario");
+    async function restaurarSessao() {
+      const tokenSalvo = localStorage.getItem("@DoacoesFMP:token");
+      const usuarioSalvo = localStorage.getItem("@DoacoesFMP:usuario");
 
-    if (tokenSalvo && usuarioSalvo) {
-      setToken(tokenSalvo);
-      setUsuario(JSON.parse(usuarioSalvo));
+      if (tokenSalvo && usuarioSalvo) {
+        setToken(tokenSalvo);
+        setUsuario(JSON.parse(usuarioSalvo));
+        await carregarPerfil();
+      }
+      setCarregando(false);
     }
-    setCarregando(false);
+    restaurarSessao();
   }, []);
+
+  async function carregarPerfil() {
+    try {
+      const resposta = await api.get("/api/auth/perfil");
+      setPerfil(resposta.data);
+    } catch (erro) {
+      console.error("Erro ao carregar perfil do aluno:", erro);
+    }
+  }
 
   async function login(email, senha) {
     try {
@@ -113,6 +126,13 @@ export function AuthProvider({ children }) {
 
       setToken(novoToken);
       setUsuario(dadosUsuario);
+
+      // Busca dados completos do perfil (matrícula, curso e saldo de horas)
+      const resPerfil = await api.get("/api/auth/perfil", {
+        headers: { Authorization: `Bearer ${novoToken}` }
+      });
+      setPerfil(resPerfil.data);
+
       return { sucesso: true };
     } catch (erro) {
       const mensagem = erro.response?.data?.mensagem || "Erro ao efetuar login.";
@@ -125,6 +145,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("@DoacoesFMP:usuario");
     setToken(null);
     setUsuario(null);
+    setPerfil(null);
   }
 
   return (
@@ -132,6 +153,8 @@ export function AuthProvider({ children }) {
       value={{
         autenticado: !!usuario,
         usuario,
+        perfil,
+        carregarPerfil,
         token,
         carregando,
         login,
@@ -180,9 +203,9 @@ export function PrivateRoute() {
 
 ---
 
-## 📋 6. Exemplo: Listagem de Doações (`src/pages/DoacoesPage.jsx`)
+## 📋 6. Exemplo: Listagem de Doações com Saldo de Horas (`src/pages/DoacoesPage.jsx`)
 
-Renderiza a lista consumindo `GET /api/doacoes` utilizando **exatamente os campos retornados pela API**:
+Renderiza a lista consumindo `GET /api/doacoes` e exibe o saldo de horas via `perfil`:
 
 ```jsx
 import React, { useEffect, useState } from "react";
@@ -193,7 +216,7 @@ export function DoacoesPage() {
   const [doacoes, setDoacoes] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
-  const { usuario, logout } = useAuth();
+  const { usuario, perfil, logout } = useAuth();
 
   useEffect(() => {
     carregarDoacoes();
@@ -216,7 +239,12 @@ export function DoacoesPage() {
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <h2>Gestão de Doações — FMP</h2>
-          <p>Bem-vindo(a), <strong>{usuario?.nome}</strong></p>
+          <p>
+            Aluno: <strong>{perfil?.nome || usuario?.nome}</strong> | Matrícula: <strong>{perfil?.matricula || "—"}</strong>
+          </p>
+          <p>
+            Curso: <strong>{perfil?.curso || "ADS"}</strong> | Saldo de Horas: <strong>{perfil?.saldo_horas || "0.00"}h</strong>
+          </p>
         </div>
         <button onClick={logout} style={{ padding: "8px 16px", cursor: "pointer" }}>
           Sair
@@ -284,42 +312,54 @@ export function DoacoesPage() {
 
 ---
 
-## 🗺️ 7. Configuração das Rotas no `App.jsx`
+## 📦 7. Exemplo: Catálogo de Itens Aceitos (`GET /api/itens`)
+
+Componente ou modal para seleção/listagem de itens cadastrados no banco de dados:
 
 ```jsx
-import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
-import { PrivateRoute } from "./components/PrivateRoute";
-import { LoginPage } from "./pages/LoginPage";
-import { DoacoesPage } from "./pages/DoacoesPage";
+import React, { useEffect, useState } from "react";
+import api from "../services/api";
 
-export default function App() {
+export function CatalogoItens() {
+  const [itens, setItens] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+
+  useEffect(() => {
+    async function carregarItens() {
+      try {
+        const resposta = await api.get("/api/itens");
+        setItens(resposta.data);
+      } catch (erro) {
+        console.error("Erro ao buscar catálogo de itens:", erro);
+      } finally {
+        setCarregando(false);
+      }
+    }
+    carregarItens();
+  }, []);
+
+  if (carregando) return <p>Carregando itens...</p>;
+
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          {/* Rotas Públicas */}
-          <Route path="/login" element={<LoginPage />} />
-
-          {/* Rotas Protegidas com JWT */}
-          <Route element={<PrivateRoute />}>
-            <Route path="/doacoes" element={<DoacoesPage />} />
-          </Route>
-
-          {/* Redirecionamento Padrão */}
-          <Route path="*" element={<Navigate to="/doacoes" replace />} />
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
+    <div>
+      <h3>Itens Aceitos para Doação</h3>
+      <ul>
+        {itens.map((item) => (
+          <li key={item.id}>
+            <strong>{item.nome}</strong> — Categoria: <em>{item.categoria}</em>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 ```
 
 ---
 
-## 🎯 Resumo dos Nomes de Campos Retornados pela API
+## 🎯 Resumo dos Campos Retornados pela API
 
+### Doações (`GET /api/doacoes`)
 | Campo na API | Tipo | Exemplo |
 |---|---|---|
 | `id` | number | `1` |
@@ -331,3 +371,21 @@ export default function App() {
 | `status` | string | `"Pendente"`, `"Aprovada"`, `"Reprovada"` |
 | `horas_concedidas`| string / null | `"10.00"` |
 | `local_entrega` | string | `"Recepção Principal FMP"` |
+
+### Perfil do Usuário (`GET /api/auth/perfil`)
+| Campo na API | Tipo | Exemplo |
+|---|---|---|
+| `id` | number | `2` |
+| `nome` | string | `"Davi"` |
+| `email` | string | `"davi@aluno.fmpsc.edu.br"` |
+| `cpf` | string / null | `"111.111.111-11"` |
+| `matricula` | string | `"19875"` |
+| `curso` | string | `"Análise e Desenvolvimento de Sistemas"` |
+| `saldo_horas` | string (numeric) | `"20.00"` |
+
+### Catálogo de Itens (`GET /api/itens`)
+| Campo na API | Tipo | Exemplo |
+|---|---|---|
+| `id` | number | `1` |
+| `nome` | string | `"Cobertor Grosso"` |
+| `categoria` | string | `"Agasalho"` |

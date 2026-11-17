@@ -3,7 +3,7 @@ const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
 const doacaoRoutes = require("./routes/doacaoRoutes");
 const campanhaRoutes = require("./routes/campanhaRoutes");
-const itemRoutes = require('./routes/itemRoutes');
+const itemRoutes = require("./routes/itemRoutes");
 
 const app = express();
 
@@ -30,12 +30,11 @@ app.get("/", (_req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/doacoes", doacaoRoutes);
 app.use("/api/campanhas", campanhaRoutes);
+app.use("/api/itens", itemRoutes);
 
 // Handler 404
 app.use((_req, res) => {
     res.status(404).json({ mensagem: "Rota não encontrada." });
 });
-
-app.use('/api/itens', itemRoutes);
 
 module.exports = app;

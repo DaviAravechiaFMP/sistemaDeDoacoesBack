@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "a91b2c3d-e4f5-4678-90ab-cdef12345678",
 		"name": "Sistema de Gestão de Doações FMP - API",
-		"description": "Coleção completa de requisições da API do Sistema de Doações FMP (Node.js + Express + PostgreSQL + JWT + Joi + bcrypt).",
+		"description": "Coleção completa e oficial de requisições da API do Sistema de Doações FMP (Node.js + Express + PostgreSQL + JWT + Joi + bcrypt).",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -24,7 +24,7 @@
 			},
 			"response": [
 				{
-					"name": "Sucesso - API Online",
+					"name": "200 OK - API Online",
 					"originalRequest": {
 						"method": "GET",
 						"header": [],
@@ -53,7 +53,7 @@
 			]
 		},
 		{
-			"name": "Autenticação",
+			"name": "Autenticação & Perfil",
 			"item": [
 				{
 					"name": "Registrar Aluno (Público)",
@@ -190,7 +190,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"email\": \"admin@fmpsc.edu.br\",\n    \"senha\": \"admin123\"\n}"
+							"raw": "{\n    \"email\": \"davi@aluno.fmpsc.edu.br\",\n    \"senha\": \"senhaCorreta123\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/auth/login",
@@ -218,7 +218,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"email\": \"admin@fmpsc.edu.br\",\n    \"senha\": \"admin123\"\n}"
+									"raw": "{\n    \"email\": \"davi@aluno.fmpsc.edu.br\",\n    \"senha\": \"senhaCorreta123\"\n}"
 								},
 								"url": {
 									"raw": "{{base_url}}/api/auth/login",
@@ -242,7 +242,7 @@
 								}
 							],
 							"cookie": [],
-							"body": "{\n    \"mensagem\": \"Login realizado com sucesso.\",\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"usuario\": {\n        \"id\": 1,\n        \"nome\": \"Administrador Geral\",\n        \"email\": \"admin@fmpsc.edu.br\"\n    }\n}"
+							"body": "{\n    \"mensagem\": \"Login realizado com sucesso.\",\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"usuario\": {\n        \"id\": 2,\n        \"nome\": \"Davi\",\n        \"email\": \"davi@aluno.fmpsc.edu.br\"\n    }\n}"
 						},
 						{
 							"name": "401 Unauthorized - Credenciais Inválidas",
@@ -256,7 +256,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"email\": \"admin@fmpsc.edu.br\",\n    \"senha\": \"senhaErrada\"\n}"
+									"raw": "{\n    \"email\": \"davi@aluno.fmpsc.edu.br\",\n    \"senha\": \"senhaErrada\"\n}"
 								},
 								"url": {
 									"raw": "{{base_url}}/api/auth/login",
@@ -294,7 +294,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"email\": \"admin@fmpsc.edu.br\",\n    \"senha\": \"senhaErrada\"\n}"
+									"raw": "{\n    \"email\": \"davi@aluno.fmpsc.edu.br\",\n    \"senha\": \"senhaErrada\"\n}"
 								},
 								"url": {
 									"raw": "{{base_url}}/api/auth/login",
@@ -319,6 +319,96 @@
 							],
 							"cookie": [],
 							"body": "{\n    \"mensagem\": \"Muitas tentativas falhas. Conta bloqueada por 15 minuto(s).\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Perfil do Usuário Logado",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/auth/perfil",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"perfil"
+							]
+						},
+						"description": "Retorna os dados completos do usuário autenticado no token, incluindo matrícula e saldo de horas complementares."
+					},
+					"response": [
+						{
+							"name": "200 OK - Perfil do Aluno",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/auth/perfil",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"auth",
+										"perfil"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"id\": 2,\n    \"nome\": \"Davi\",\n    \"email\": \"davi@aluno.fmpsc.edu.br\",\n    \"cpf\": \"111.111.111-11\",\n    \"matricula\": \"19875\",\n    \"curso\": \"Análise e Desenvolvimento de Sistemas\",\n    \"saldo_horas\": \"20.00\"\n}"
+						},
+						{
+							"name": "401 Unauthorized - Sem Token",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/auth/perfil",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"auth",
+										"perfil"
+									]
+								}
+							},
+							"status": "Unauthorized",
+							"code": 401,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"mensagem\": \"Acesso negado. Token de autenticação não informado.\"\n}"
 						}
 					]
 				}
@@ -858,6 +948,126 @@
 							],
 							"cookie": [],
 							"body": "[\n    {\n        \"id\": 1,\n        \"titulo\": \"Campanha de Inverno 2026\",\n        \"descricao\": \"Arrecadação de agasalhos e cobertores.\",\n        \"data_limite\": \"2026-08-30\",\n        \"status\": \"Ativa\",\n        \"regras_conversao\": \"1 agasalho/cobertor = 5 horas\",\n        \"limite_horas\": \"40.00\"\n    },\n    {\n        \"id\": 2,\n        \"titulo\": \"SOS Enchentes RS\",\n        \"descricao\": \"Alimentos não perecíveis e água potável.\",\n        \"data_limite\": \"2026-07-15\",\n        \"status\": \"Ativa\",\n        \"regras_conversao\": \"1 kg/item = 2 horas\",\n        \"limite_horas\": \"30.00\"\n    },\n    {\n        \"id\": 3,\n        \"titulo\": \"Material Escolar Solidário\",\n        \"descricao\": \"Kits para o início do ano letivo.\",\n        \"data_limite\": \"2026-03-10\",\n        \"status\": \"Encerrada\",\n        \"regras_conversao\": \"1 kit completo = 10 horas\",\n        \"limite_horas\": \"20.00\"\n    }\n]"
+						},
+						{
+							"name": "401 Unauthorized - Sem Token",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/campanhas",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"campanhas"
+									]
+								}
+							},
+							"status": "Unauthorized",
+							"code": 401,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"mensagem\": \"Acesso negado. Token de autenticação não informado.\"\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Catálogo de Itens",
+			"item": [
+				{
+					"name": "Listar Itens para Doação",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/itens",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"itens"
+							]
+						},
+						"description": "Lista todos os itens aceitos para doação cadastrados no banco de dados (protegida com JWT)."
+					},
+					"response": [
+						{
+							"name": "200 OK - Catálogo de Itens",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{token}}"
+									}
+								],
+								"url": {
+									"raw": "{{base_url}}/api/itens",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"itens"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"id\": 1,\n        \"nome\": \"Cobertor Grosso\",\n        \"categoria\": \"Agasalho\"\n    },\n    {\n        \"id\": 2,\n        \"nome\": \"Casaco de Frio\",\n        \"categoria\": \"Agasalho\"\n    },\n    {\n        \"id\": 3,\n        \"nome\": \"Arroz (Pacote 5kg)\",\n        \"categoria\": \"Alimento\"\n    },\n    {\n        \"id\": 4,\n        \"nome\": \"Água Mineral (Fardo)\",\n        \"categoria\": \"Alimento\"\n    },\n    {\n        \"id\": 5,\n        \"nome\": \"Caderno Universitário\",\n        \"categoria\": \"Material Escolar\"\n    }\n]"
+						},
+						{
+							"name": "401 Unauthorized - Sem Token",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/itens",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"itens"
+									]
+								}
+							},
+							"status": "Unauthorized",
+							"code": 401,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"mensagem\": \"Acesso negado. Token de autenticação não informado.\"\n}"
 						}
 					]
 				}
