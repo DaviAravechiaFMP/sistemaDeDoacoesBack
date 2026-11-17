@@ -2,7 +2,19 @@
 
 **Projeto Integrador** com API REST em **Node.js**, **Express** e **PostgreSQL**, desenvolvida para intermediar a arrecadação de donativos e o controle de horas complementares no sistema da Faculdade Municipal de Palhoça (FMP).
 
-> **Etapa atual (Aula 13):** Arquitetura **MVC completa consolidada em `src/`**, banco de dados PostgreSQL integrado, transações atômicas, rotas protegidas por **JWT**, hash de senha com **bcrypt**, validação de dados com **Joi**, suporte a **CORS**, bloqueio progressivo de login, endpoints de perfil e catálogo de itens, e documentação para deploy na nuvem (**Render**).
+> **Status da Aplicação:** 🟢 **API em Produção no Render** conectada ao PostgreSQL gerenciado.  
+> **Etapa:** Arquitetura **MVC completa consolidada em `src/`**, banco de dados PostgreSQL integrado, transações atômicas, rotas protegidas por **JWT**, hash de senha com **bcrypt**, validação de dados com **Joi**, suporte a **CORS**, bloqueio progressivo de login, endpoints de perfil do aluno (com saldo de horas), catálogo de itens e integração concluída com o front-end React.
+
+---
+
+## 🔗 Links Oficiais do Projeto
+
+| Recurso | Descrição | Link de Acesso |
+|---|---|---|
+| 🌐 **API em Produção (Render)** | Web Service REST online no Render | [https://sistemadedoacoesback.onrender.com/](https://sistemadedoacoesback.onrender.com/) |
+| ⚙️ **Repositório Back-end** | Repositório oficial do back-end Node.js | [DaviAravechiaFMP/sistemaDeDoacoesBack](https://github.com/DaviAravechiaFMP/sistemaDeDoacoesBack.git) |
+| 💻 **Repositório Front-end** | Repositório oficial do front-end React + Vite | [DaviAravechiaFMP/Front-sistema-de-doa-es](https://github.com/DaviAravechiaFMP/Front-sistema-de-doa-es.git) |
+| 📮 **Coleção Postman (Nuvem)** | Workspace oficial compartilhado no Postman | [Acessar Coleção Postman](https://go.postman.co/collection/59258389-769418dd-3d80-42ce-bae7-2d9c7be3bb03?source=collection_link) |
 
 ---
 
@@ -46,7 +58,8 @@ Todos os manuais, contratos e artefatos de entrega estão organizados no diretó
 - 💻 [**Guia de Integração com o Front-end (FRONTEND_INTEGRATION_GUIDE.md)**](docs/FRONTEND_INTEGRATION_GUIDE.md) — Guia pronto para IA ou desenvolvedores Front-end (React + Vite) contendo cliente Axios com interceptor de token, `AuthContext`, `PrivateRoute`, perfil do aluno e listagens de doações e itens.
 - 🚀 [**Guia de Banco de Dados e Deploy no Render (DATABASE_AND_DEPLOY.md)**](docs/DATABASE_AND_DEPLOY.md) — Passo a passo para provisionamento do PostgreSQL gerenciado e do Web Service Node.js no Render com suporte a SSL e `DATABASE_URL`.
 - 🎬 [**Roteiro do Vídeo de Apresentação (ROTEIRO_VIDEO_E_ENTREGA.md)**](docs/ROTEIRO_VIDEO_E_ENTREGA.md) — Roteiro de 4 minutos cronometrado e dividido em 3 partes de 1m20s (Davi, Lucas e Eduardo), com checklist da Aula 13.
-- 📮 [**Coleção Postman v2.1**](docs/postman/Sistema_Doacoes_FMP.postman_collection.json) — Arquivo JSON pronto para importar no Postman com todas as requisições configuradas, exemplos de respostas e script para salvar o token JWT automaticamente.
+- 📮 [**Coleção Postman v2.1 Local**](docs/postman/Sistema_Doacoes_FMP.postman_collection.json) — Arquivo JSON para importar no Postman com todas as requisições configuradas e script para salvar JWT automaticamente.
+- 🌐 [**Link da Coleção Postman Online**](https://go.postman.co/collection/59258389-769418dd-3d80-42ce-bae7-2d9c7be3bb03?source=collection_link) — Acesso direto via web ou aplicativo Postman.
 
 ---
 
@@ -72,10 +85,11 @@ Todos os manuais, contratos e artefatos de entrega estão organizados no diretó
 Todo o código-fonte da aplicação está estruturado dentro de `src/`, respeitando a separação de responsabilidades do padrão **MVC**:
 
 ```text
-aulaoito/
+sistemaDeDoacoesBack/
 ├── docs/
 │   ├── postman/
-│   │   └── Sistema_Doacoes_FMP.postman_collection.json  ← Coleção v2.1 completa
+│   │   ├── Sistema_Doacoes_FMP.postman_collection.json  ← Coleção v2.1 oficial exportada
+│   │   └── Sistema_de_Gestao_de_Doacoes_FMP_API.postman_collection.json
 │   ├── API_CONTRACT.md              ← Contrato e esquemas JSON da API
 │   ├── FRONTEND_INTEGRATION_GUIDE.md← Guia para integração em React + Vite
 │   ├── DATABASE_AND_DEPLOY.md       ← Guia de deploy no Render (Web Service + DB)
@@ -265,21 +279,23 @@ erDiagram
 
 ## 📊 Testes com Postman
 
-Uma coleção completa e pré-configurada está disponível em:  
-📁 [`docs/postman/Sistema_Doacoes_FMP.postman_collection.json`](docs/postman/Sistema_Doacoes_FMP.postman_collection.json)
+A coleção completa e oficial de requisições está disponível para importação e execução:
+- 📁 **Arquivo Local:** [`docs/postman/Sistema_Doacoes_FMP.postman_collection.json`](docs/postman/Sistema_Doacoes_FMP.postman_collection.json)
+- 🌐 **Link no Postman Cloud:** [Acessar Coleção Online](https://go.postman.co/collection/59258389-769418dd-3d80-42ce-bae7-2d9c7be3bb03?source=collection_link)
 
 **Funcionalidades incluídas na coleção:**
-- Variáveis de coleção `base_url` e `token`.
+- Variáveis de coleção `base_url` (apontando para local ou `https://sistemadedoacoesback.onrender.com`) e `token`.
 - Script automático na aba `Tests` do **Login**: ao realizar login com sucesso, o token JWT retornado é gravado automaticamente na variável `{{token}}`, autenticando instantaneamente todas as demais requisições protegidas.
-- Exemplos de requisições e respostas salvas para cada um dos 11 endpoints.
+- Exemplos de requisições e respostas salvas para cada um dos endpoints (sucesso e falhas).
 
 ---
 
 ## ☁️ Deploy em Produção (Render)
 
-A aplicação está configurada para deploy automático no **Render**:
+A aplicação está hospedada e em execução contínua no **Render**:
+- 🌐 **URL Oficial do Web Service:** [https://sistemadedoacoesback.onrender.com/](https://sistemadedoacoesback.onrender.com/)
 - O `src/config/db.js` detecta automaticamente a variável de ambiente `DATABASE_URL` e aplica `ssl: { rejectUnauthorized: false }`.
-- O `cors` permite requisições da aplicação front-end hospedada em qualquer domínio.
+- O middleware `cors` permite requisições da aplicação front-end hospedada em qualquer domínio.
 - Passo a passo detalhado disponível em: [`docs/DATABASE_AND_DEPLOY.md`](docs/DATABASE_AND_DEPLOY.md).
 
 ---

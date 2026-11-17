@@ -1,1089 +1,1117 @@
 {
-	"info": {
-		"_postman_id": "a91b2c3d-e4f5-4678-90ab-cdef12345678",
-		"name": "Sistema de Gestão de Doações FMP - API",
-		"description": "Coleção completa e oficial de requisições da API do Sistema de Doações FMP (Node.js + Express + PostgreSQL + JWT + Joi + bcrypt).",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-	},
-	"item": [
-		{
-			"name": "Health Check",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{base_url}}/",
-					"host": [
-						"{{base_url}}"
-					],
-					"path": [
-						""
-					]
-				},
-				"description": "Verifica se a API está online e conectada ao PostgreSQL."
-			},
-			"response": [
-				{
-					"name": "200 OK - API Online",
-					"originalRequest": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{base_url}}/",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								""
-							]
-						}
-					},
-					"status": "OK",
-					"code": 200,
-					"_postman_previewlanguage": "json",
-					"header": [
-						{
-							"key": "Content-Type",
-							"value": "application/json; charset=utf-8"
-						}
-					],
-					"cookie": [],
-					"body": "{\n    \"mensagem\": \"API do Sistema de Doações FMP conectada ao PostgreSQL.\",\n    \"versao\": \"2.0.0\"\n}"
-				}
-			]
-		},
-		{
-			"name": "Autenticação & Perfil",
-			"item": [
-				{
-					"name": "Registrar Aluno (Público)",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"nome\": \"Mariana Souza\",\n    \"cpf\": \"123.456.789-00\",\n    \"email\": \"mariana@aluno.fmpsc.edu.br\",\n    \"senha\": \"senhaForte123\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/auth/registrar",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"auth",
-								"registrar"
-							]
-						},
-						"description": "Cadastra um novo usuário e perfil de aluno através de transação atômica no PostgreSQL."
-					},
-					"response": [
-						{
-							"name": "201 Created - Aluno Registrado",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"nome\": \"Mariana Souza\",\n    \"cpf\": \"123.456.789-00\",\n    \"email\": \"mariana@aluno.fmpsc.edu.br\",\n    \"senha\": \"senhaForte123\"\n}"
-								},
-								"url": {
-									"raw": "{{base_url}}/api/auth/registrar",
-									"host": [
-										"{{base_url}}"
-									],
-									"path": [
-										"api",
-										"auth",
-										"registrar"
-									]
-								}
-							},
-							"status": "Created",
-							"code": 201,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"mensagem\": \"Usuário registrado com sucesso.\",\n    \"usuario\": {\n        \"id\": 8,\n        \"nome\": \"Mariana Souza\",\n        \"email\": \"mariana@aluno.fmpsc.edu.br\",\n        \"cpf\": \"123.456.789-00\",\n        \"matricula\": \"10008\"\n    }\n}"
-						},
-						{
-							"name": "409 Conflict - E-mail já cadastrado",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"nome\": \"Mariana Souza\",\n    \"cpf\": \"123.456.789-00\",\n    \"email\": \"mariana@aluno.fmpsc.edu.br\",\n    \"senha\": \"senhaForte123\"\n}"
-								},
-								"url": {
-									"raw": "{{base_url}}/api/auth/registrar",
-									"host": [
-										"{{base_url}}"
-									],
-									"path": [
-										"api",
-										"auth",
-										"registrar"
-									]
-								}
-							},
-							"status": "Conflict",
-							"code": 409,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"mensagem\": \"E-mail já cadastrado.\"\n}"
-						}
-					]
-				},
-				{
-					"name": "Login (Gera e Salva JWT)",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"if (pm.response.code === 200) {",
-									"    var jsonData = pm.response.json();",
-									"    if (jsonData.token) {",
-									"        pm.collectionVariables.set(\"token\", jsonData.token);",
-									"        console.log(\"Token JWT salvo na variável da coleção: \" + jsonData.token);",
-									"    }",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"email\": \"davi@aluno.fmpsc.edu.br\",\n    \"senha\": \"senhaCorreta123\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/auth/login",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"auth",
-								"login"
-							]
-						},
-						"description": "Autentica usuário, valida credenciais com bcrypt e emite JWT. A aba Tests salva o token na variável {{token}}."
-					},
-					"response": [
-						{
-							"name": "200 OK - Login com Sucesso",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"email\": \"davi@aluno.fmpsc.edu.br\",\n    \"senha\": \"senhaCorreta123\"\n}"
-								},
-								"url": {
-									"raw": "{{base_url}}/api/auth/login",
-									"host": [
-										"{{base_url}}"
-									],
-									"path": [
-										"api",
-										"auth",
-										"login"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"mensagem\": \"Login realizado com sucesso.\",\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"usuario\": {\n        \"id\": 2,\n        \"nome\": \"Davi\",\n        \"email\": \"davi@aluno.fmpsc.edu.br\"\n    }\n}"
-						},
-						{
-							"name": "401 Unauthorized - Credenciais Inválidas",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"email\": \"davi@aluno.fmpsc.edu.br\",\n    \"senha\": \"senhaErrada\"\n}"
-								},
-								"url": {
-									"raw": "{{base_url}}/api/auth/login",
-									"host": [
-										"{{base_url}}"
-									],
-									"path": [
-										"api",
-										"auth",
-										"login"
-									]
-								}
-							},
-							"status": "Unauthorized",
-							"code": 401,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"mensagem\": \"Credenciais inválidas.\",\n    \"tentativas_restantes\": 4\n}"
-						},
-						{
-							"name": "403 Forbidden - Conta Bloqueada",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"email\": \"davi@aluno.fmpsc.edu.br\",\n    \"senha\": \"senhaErrada\"\n}"
-								},
-								"url": {
-									"raw": "{{base_url}}/api/auth/login",
-									"host": [
-										"{{base_url}}"
-									],
-									"path": [
-										"api",
-										"auth",
-										"login"
-									]
-								}
-							},
-							"status": "Forbidden",
-							"code": 403,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"mensagem\": \"Muitas tentativas falhas. Conta bloqueada por 15 minuto(s).\"\n}"
-						}
-					]
-				},
-				{
-					"name": "Perfil do Usuário Logado",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/auth/perfil",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"auth",
-								"perfil"
-							]
-						},
-						"description": "Retorna os dados completos do usuário autenticado no token, incluindo matrícula e saldo de horas complementares."
-					},
-					"response": [
-						{
-							"name": "200 OK - Perfil do Aluno",
-							"originalRequest": {
-								"method": "GET",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{token}}"
-									}
-								],
-								"url": {
-									"raw": "{{base_url}}/api/auth/perfil",
-									"host": [
-										"{{base_url}}"
-									],
-									"path": [
-										"api",
-										"auth",
-										"perfil"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"id\": 2,\n    \"nome\": \"Davi\",\n    \"email\": \"davi@aluno.fmpsc.edu.br\",\n    \"cpf\": \"111.111.111-11\",\n    \"matricula\": \"19875\",\n    \"curso\": \"Análise e Desenvolvimento de Sistemas\",\n    \"saldo_horas\": \"20.00\"\n}"
-						},
-						{
-							"name": "401 Unauthorized - Sem Token",
-							"originalRequest": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{base_url}}/api/auth/perfil",
-									"host": [
-										"{{base_url}}"
-									],
-									"path": [
-										"api",
-										"auth",
-										"perfil"
-									]
-								}
-							},
-							"status": "Unauthorized",
-							"code": 401,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"mensagem\": \"Acesso negado. Token de autenticação não informado.\"\n}"
-						}
-					]
-				}
-			]
-		},
-		{
-			"name": "Doações",
-			"item": [
-				{
-					"name": "Listar Doações",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/doacoes",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"doacoes"
-							]
-						},
-						"description": "Retorna lista de doações registradas com JOIN no aluno e campanha (protegida com JWT)."
-					},
-					"response": [
-						{
-							"name": "200 OK - Lista de Doações",
-							"originalRequest": {
-								"method": "GET",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{token}}"
-									}
-								],
-								"url": {
-									"raw": "{{base_url}}/api/doacoes",
-									"host": [
-										"{{base_url}}"
-									],
-									"path": [
-										"api",
-										"doacoes"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								}
-							],
-							"cookie": [],
-							"body": "[\n    {\n        \"id\": 1,\n        \"aluno_id\": 2,\n        \"doador\": \"Davi\",\n        \"campanha_id\": 1,\n        \"campanha\": \"Campanha de Inverno 2026\",\n        \"data\": \"2026-06-01\",\n        \"status\": \"Aprovada\",\n        \"horas_concedidas\": \"10.00\",\n        \"local_entrega\": \"Recepção Principal FMP\"\n    },\n    {\n        \"id\": 2,\n        \"aluno_id\": 3,\n        \"doador\": \"Eduardo\",\n        \"campanha_id\": 2,\n        \"campanha\": \"SOS Enchentes RS\",\n        \"data\": \"2026-06-20\",\n        \"status\": \"Aprovada\",\n        \"horas_concedidas\": \"20.00\",\n        \"local_entrega\": \"Hemocentro SC\"\n    }\n]"
-						},
-						{
-							"name": "401 Unauthorized - Sem Token",
-							"originalRequest": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{base_url}}/api/doacoes",
-									"host": [
-										"{{base_url}}"
-									],
-									"path": [
-										"api",
-										"doacoes"
-									]
-								}
-							},
-							"status": "Unauthorized",
-							"code": 401,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"mensagem\": \"Acesso negado. Token de autenticação não informado.\"\n}"
-						}
-					]
-				},
-				{
-					"name": "Buscar Doação por ID",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/doacoes/1",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"doacoes",
-								"1"
-							]
-						},
-						"description": "Retorna uma doação específica pelo seu ID (protegida com JWT)."
-					},
-					"response": [
-						{
-							"name": "200 OK - Doação Encontrada",
-							"originalRequest": {
-								"method": "GET",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{token}}"
-									}
-								],
-								"url": {
-									"raw": "{{base_url}}/api/doacoes/1",
-									"host": [
-										"{{base_url}}"
-									],
-									"path": [
-										"api",
-										"doacoes",
-										"1"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"id\": 1,\n    \"aluno_id\": 2,\n    \"doador\": \"Davi\",\n    \"campanha_id\": 1,\n    \"campanha\": \"Campanha de Inverno 2026\",\n    \"data\": \"2026-06-01\",\n    \"status\": \"Aprovada\",\n    \"horas_concedidas\": \"10.00\",\n    \"local_entrega\": \"Recepção Principal FMP\"\n}"
-						},
-						{
-							"name": "404 Not Found - Doação não encontrada",
-							"originalRequest": {
-								"method": "GET",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{token}}"
-									}
-								],
-								"url": {
-									"raw": "{{base_url}}/api/doacoes/999",
-									"host": [
-										"{{base_url}}"
-									],
-									"path": [
-										"api",
-										"doacoes",
-										"999"
-									]
-								}
-							},
-							"status": "Not Found",
-							"code": 404,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"mensagem\": \"Doação não encontrada.\"\n}"
-						}
-					]
-				},
-				{
-					"name": "Cadastrar Doação",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}",
-								"type": "text"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"aluno_id\": 2,\n    \"campanha_id\": 1,\n    \"data\": \"2026-11-20\",\n    \"status\": \"Pendente\",\n    \"local_entrega\": \"Recepção Principal FMP\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/doacoes",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"doacoes"
-							]
-						},
-						"description": "Cadastra uma doação (validada por Joi e protegida por JWT)."
-					},
-					"response": [
-						{
-							"name": "201 Created - Doação Cadastrada",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{token}}"
-									},
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"aluno_id\": 2,\n    \"campanha_id\": 1,\n    \"data\": \"2026-11-20\",\n    \"status\": \"Pendente\",\n    \"local_entrega\": \"Recepção Principal FMP\"\n}"
-								},
-								"url": {
-									"raw": "{{base_url}}/api/doacoes",
-									"host": [
-										"{{base_url}}"
-									],
-									"path": [
-										"api",
-										"doacoes"
-									]
-								}
-							},
-							"status": "Created",
-							"code": 201,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"mensagem\": \"Doação cadastrada com sucesso.\",\n    \"doacao\": {\n        \"id\": 4,\n        \"aluno_id\": 2,\n        \"campanha_id\": 1,\n        \"func_registro_id\": null,\n        \"func_validacao_id\": null,\n        \"data\": \"2026-11-20\",\n        \"status\": \"Pendente\",\n        \"foto_evidencia\": null,\n        \"motivo_reprovacao\": null,\n        \"horas_concedidas\": null,\n        \"horario_doacao\": null,\n        \"retencao_anos\": null,\n        \"local_entrega\": \"Recepção Principal FMP\"\n    }\n}"
-						},
-						{
-							"name": "400 Bad Request - Validação Joi",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{token}}"
-									},
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"data\": \"data-invalida\"\n}"
-								},
-								"url": {
-									"raw": "{{base_url}}/api/doacoes",
-									"host": [
-										"{{base_url}}"
-									],
-									"path": [
-										"api",
-										"doacoes"
-									]
-								}
-							},
-							"status": "Bad Request",
-							"code": 400,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"mensagem\": \"aluno_id é obrigatório.\",\n    \"erros\": [\n        \"aluno_id é obrigatório.\",\n        \"data está em formato inválido.\"\n    ]\n}"
-						}
-					]
-				},
-				{
-					"name": "Atualizar Doação",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}",
-								"type": "text"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"status\": \"Aprovada\",\n    \"horas_concedidas\": 10,\n    \"local_entrega\": \"Coordenação COPER\"\n}"
-						},
-						"url": {
-							"raw": "{{base_url}}/api/doacoes/1",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"doacoes",
-								"1"
-							]
-						},
-						"description": "Atualiza campos da doação (protegida com JWT e validada por Joi)."
-					},
-					"response": [
-						{
-							"name": "200 OK - Doação Atualizada",
-							"originalRequest": {
-								"method": "PUT",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{token}}"
-									},
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"status\": \"Aprovada\",\n    \"horas_concedidas\": 10,\n    \"local_entrega\": \"Coordenação COPER\"\n}"
-								},
-								"url": {
-									"raw": "{{base_url}}/api/doacoes/1",
-									"host": [
-										"{{base_url}}"
-									],
-									"path": [
-										"api",
-										"doacoes",
-										"1"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"mensagem\": \"Doação atualizada com sucesso.\",\n    \"doacao\": {\n        \"id\": 1,\n        \"aluno_id\": 2,\n        \"campanha_id\": 1,\n        \"data\": \"2026-06-01\",\n        \"status\": \"Aprovada\",\n        \"horas_concedidas\": \"10.00\",\n        \"local_entrega\": \"Coordenação COPER\"\n    }\n}"
-						}
-					]
-				},
-				{
-					"name": "Excluir Doação",
-					"request": {
-						"method": "DELETE",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/doacoes/1",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"doacoes",
-								"1"
-							]
-						},
-						"description": "Remove uma doação pelo ID (protegida com JWT)."
-					},
-					"response": [
-						{
-							"name": "200 OK - Doação Excluída",
-							"originalRequest": {
-								"method": "DELETE",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{token}}"
-									}
-								],
-								"url": {
-									"raw": "{{base_url}}/api/doacoes/1",
-									"host": [
-										"{{base_url}}"
-									],
-									"path": [
-										"api",
-										"doacoes",
-										"1"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"mensagem\": \"Doação excluída com sucesso.\",\n    \"doacao\": {\n        \"id\": 1,\n        \"aluno_id\": 2,\n        \"campanha_id\": 1,\n        \"data\": \"2026-06-01\",\n        \"status\": \"Aprovada\"\n    }\n}"
-						},
-						{
-							"name": "400 Bad Request - Erro de Chave Estrangeira",
-							"originalRequest": {
-								"method": "DELETE",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{token}}"
-									}
-								],
-								"url": {
-									"raw": "{{base_url}}/api/doacoes/1",
-									"host": [
-										"{{base_url}}"
-									],
-									"path": [
-										"api",
-										"doacoes",
-										"1"
-									]
-								}
-							},
-							"status": "Bad Request",
-							"code": 400,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"mensagem\": \"Não foi possível excluir: existem registros relacionados a esta doação.\"\n}"
-						}
-					]
-				}
-			]
-		},
-		{
-			"name": "Campanhas",
-			"item": [
-				{
-					"name": "Listar Campanhas",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/campanhas",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"campanhas"
-							]
-						},
-						"description": "Lista todas as campanhas institucionais cadastradas no PostgreSQL (protegida com JWT)."
-					},
-					"response": [
-						{
-							"name": "200 OK - Lista de Campanhas",
-							"originalRequest": {
-								"method": "GET",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{token}}"
-									}
-								],
-								"url": {
-									"raw": "{{base_url}}/api/campanhas",
-									"host": [
-										"{{base_url}}"
-									],
-									"path": [
-										"api",
-										"campanhas"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								}
-							],
-							"cookie": [],
-							"body": "[\n    {\n        \"id\": 1,\n        \"titulo\": \"Campanha de Inverno 2026\",\n        \"descricao\": \"Arrecadação de agasalhos e cobertores.\",\n        \"data_limite\": \"2026-08-30\",\n        \"status\": \"Ativa\",\n        \"regras_conversao\": \"1 agasalho/cobertor = 5 horas\",\n        \"limite_horas\": \"40.00\"\n    },\n    {\n        \"id\": 2,\n        \"titulo\": \"SOS Enchentes RS\",\n        \"descricao\": \"Alimentos não perecíveis e água potável.\",\n        \"data_limite\": \"2026-07-15\",\n        \"status\": \"Ativa\",\n        \"regras_conversao\": \"1 kg/item = 2 horas\",\n        \"limite_horas\": \"30.00\"\n    },\n    {\n        \"id\": 3,\n        \"titulo\": \"Material Escolar Solidário\",\n        \"descricao\": \"Kits para o início do ano letivo.\",\n        \"data_limite\": \"2026-03-10\",\n        \"status\": \"Encerrada\",\n        \"regras_conversao\": \"1 kit completo = 10 horas\",\n        \"limite_horas\": \"20.00\"\n    }\n]"
-						},
-						{
-							"name": "401 Unauthorized - Sem Token",
-							"originalRequest": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{base_url}}/api/campanhas",
-									"host": [
-										"{{base_url}}"
-									],
-									"path": [
-										"api",
-										"campanhas"
-									]
-								}
-							},
-							"status": "Unauthorized",
-							"code": 401,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"mensagem\": \"Acesso negado. Token de autenticação não informado.\"\n}"
-						}
-					]
-				}
-			]
-		},
-		{
-			"name": "Catálogo de Itens",
-			"item": [
-				{
-					"name": "Listar Itens para Doação",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/itens",
-							"host": [
-								"{{base_url}}"
-							],
-							"path": [
-								"api",
-								"itens"
-							]
-						},
-						"description": "Lista todos os itens aceitos para doação cadastrados no banco de dados (protegida com JWT)."
-					},
-					"response": [
-						{
-							"name": "200 OK - Catálogo de Itens",
-							"originalRequest": {
-								"method": "GET",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{token}}"
-									}
-								],
-								"url": {
-									"raw": "{{base_url}}/api/itens",
-									"host": [
-										"{{base_url}}"
-									],
-									"path": [
-										"api",
-										"itens"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								}
-							],
-							"cookie": [],
-							"body": "[\n    {\n        \"id\": 1,\n        \"nome\": \"Cobertor Grosso\",\n        \"categoria\": \"Agasalho\"\n    },\n    {\n        \"id\": 2,\n        \"nome\": \"Casaco de Frio\",\n        \"categoria\": \"Agasalho\"\n    },\n    {\n        \"id\": 3,\n        \"nome\": \"Arroz (Pacote 5kg)\",\n        \"categoria\": \"Alimento\"\n    },\n    {\n        \"id\": 4,\n        \"nome\": \"Água Mineral (Fardo)\",\n        \"categoria\": \"Alimento\"\n    },\n    {\n        \"id\": 5,\n        \"nome\": \"Caderno Universitário\",\n        \"categoria\": \"Material Escolar\"\n    }\n]"
-						},
-						{
-							"name": "401 Unauthorized - Sem Token",
-							"originalRequest": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{base_url}}/api/itens",
-									"host": [
-										"{{base_url}}"
-									],
-									"path": [
-										"api",
-										"itens"
-									]
-								}
-							},
-							"status": "Unauthorized",
-							"code": 401,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"mensagem\": \"Acesso negado. Token de autenticação não informado.\"\n}"
-						}
-					]
-				}
-			]
-		}
-	],
-	"variable": [
-		{
-			"key": "base_url",
-			"value": "http://localhost:3000",
-			"type": "string"
-		},
-		{
-			"key": "token",
-			"value": "",
-			"type": "string"
-		}
-	]
+  "info": {
+    "_postman_id": "769418dd-3d80-42ce-bae7-2d9c7be3bb03",
+    "name": "Sistema de Gestão de Doações FMP - API",
+    "description": "Coleção completa e oficial de requisições da API do Sistema de Doações FMP (Node.js + Express + PostgreSQL + JWT + Joi + bcrypt).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "59258389",
+    "_collection_link": "https://go.postman.co/collection/59258389-769418dd-3d80-42ce-bae7-2d9c7be3bb03?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Autenticação & Perfil",
+      "item": [
+        {
+          "name": "Registrar Aluno (Público)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"nome\": \"Mariana Souza\",\n    \"cpf\": \"123.456.789-00\",\n    \"email\": \"mariana@aluno.fmpsc.edu.br\",\n    \"senha\": \"senhaForte123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/registrar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "registrar"
+              ]
+            },
+            "description": "Cadastra um novo usuário e perfil de aluno através de transação atômica no PostgreSQL."
+          },
+          "response": [
+            {
+              "name": "201 Created - Aluno Registrado",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"nome\": \"Mariana Souza\",\n    \"cpf\": \"123.456.789-00\",\n    \"email\": \"mariana@aluno.fmpsc.edu.br\",\n    \"senha\": \"senhaForte123\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/auth/registrar",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "registrar"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"mensagem\": \"Usuário registrado com sucesso.\",\n    \"usuario\": {\n        \"id\": 8,\n        \"nome\": \"Mariana Souza\",\n        \"email\": \"mariana@aluno.fmpsc.edu.br\",\n        \"cpf\": \"123.456.789-00\",\n        \"matricula\": \"10008\"\n    }\n}"
+            },
+            {
+              "name": "409 Conflict - E-mail já cadastrado",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"nome\": \"Mariana Souza\",\n    \"cpf\": \"123.456.789-00\",\n    \"email\": \"mariana@aluno.fmpsc.edu.br\",\n    \"senha\": \"senhaForte123\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/auth/registrar",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "registrar"
+                  ]
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"mensagem\": \"E-mail já cadastrado.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login (Gera e Salva JWT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.token) {",
+                  "        pm.collectionVariables.set(\"token\", jsonData.token);",
+                  "        console.log(\"Token JWT salvo na variável da coleção: \" + jsonData.token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"davi@aluno.fmpsc.edu.br\",\n    \"senha\": \"senhaCorreta123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Autentica usuário, valida credenciais com bcrypt e emite JWT. A aba Tests salva o token na variável {{token}}."
+          },
+          "response": [
+            {
+              "name": "200 OK - Login com Sucesso",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"davi@aluno.fmpsc.edu.br\",\n    \"senha\": \"senhaCorreta123\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/auth/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"mensagem\": \"Login realizado com sucesso.\",\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"usuario\": {\n        \"id\": 2,\n        \"nome\": \"Davi\",\n        \"email\": \"davi@aluno.fmpsc.edu.br\"\n    }\n}"
+            },
+            {
+              "name": "401 Unauthorized - Credenciais Inválidas",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"davi@aluno.fmpsc.edu.br\",\n    \"senha\": \"senhaErrada\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/auth/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"mensagem\": \"Credenciais inválidas.\",\n    \"tentativas_restantes\": 4\n}"
+            },
+            {
+              "name": "403 Forbidden - Conta Bloqueada",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"davi@aluno.fmpsc.edu.br\",\n    \"senha\": \"senhaErrada\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/auth/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"mensagem\": \"Muitas tentativas falhas. Conta bloqueada por 15 minuto(s).\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Perfil do Usuário Logado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "perfil"
+              ]
+            },
+            "description": "Retorna os dados completos do usuário autenticado no token, incluindo matrícula e saldo de horas complementares."
+          },
+          "response": [
+            {
+              "name": "200 OK - Perfil do Aluno",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/perfil",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "perfil"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"id\": 2,\n    \"nome\": \"Davi\",\n    \"email\": \"davi@aluno.fmpsc.edu.br\",\n    \"cpf\": \"111.111.111-11\",\n    \"matricula\": \"19875\",\n    \"curso\": \"Análise e Desenvolvimento de Sistemas\",\n    \"saldo_horas\": \"20.00\"\n}"
+            },
+            {
+              "name": "401 Unauthorized - Sem Token",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/perfil",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "perfil"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"mensagem\": \"Acesso negado. Token de autenticação não informado.\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Doações",
+      "item": [
+        {
+          "name": "Listar Doações",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/doacoes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "doacoes"
+              ]
+            },
+            "description": "Retorna lista de doações registradas com JOIN no aluno e campanha (protegida com JWT)."
+          },
+          "response": [
+            {
+              "name": "200 OK - Lista de Doações",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/doacoes",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "doacoes"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n    {\n        \"id\": 1,\n        \"aluno_id\": 2,\n        \"doador\": \"Davi\",\n        \"campanha_id\": 1,\n        \"campanha\": \"Campanha de Inverno 2026\",\n        \"data\": \"2026-06-01\",\n        \"status\": \"Aprovada\",\n        \"horas_concedidas\": \"10.00\",\n        \"local_entrega\": \"Recepção Principal FMP\"\n    },\n    {\n        \"id\": 2,\n        \"aluno_id\": 3,\n        \"doador\": \"Eduardo\",\n        \"campanha_id\": 2,\n        \"campanha\": \"SOS Enchentes RS\",\n        \"data\": \"2026-06-20\",\n        \"status\": \"Aprovada\",\n        \"horas_concedidas\": \"20.00\",\n        \"local_entrega\": \"Hemocentro SC\"\n    }\n]"
+            },
+            {
+              "name": "401 Unauthorized - Sem Token",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/doacoes",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "doacoes"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"mensagem\": \"Acesso negado. Token de autenticação não informado.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Buscar Doação por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/doacoes/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "doacoes",
+                "1"
+              ]
+            },
+            "description": "Retorna uma doação específica pelo seu ID (protegida com JWT)."
+          },
+          "response": [
+            {
+              "name": "200 OK - Doação Encontrada",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/doacoes/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "doacoes",
+                    "1"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"id\": 1,\n    \"aluno_id\": 2,\n    \"doador\": \"Davi\",\n    \"campanha_id\": 1,\n    \"campanha\": \"Campanha de Inverno 2026\",\n    \"data\": \"2026-06-01\",\n    \"status\": \"Aprovada\",\n    \"horas_concedidas\": \"10.00\",\n    \"local_entrega\": \"Recepção Principal FMP\"\n}"
+            },
+            {
+              "name": "404 Not Found - Doação não encontrada",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/doacoes/999",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "doacoes",
+                    "999"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"mensagem\": \"Doação não encontrada.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Cadastrar Doação",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"aluno_id\": 2,\n    \"campanha_id\": 1,\n    \"data\": \"2026-11-20\",\n    \"status\": \"Pendente\",\n    \"local_entrega\": \"Recepção Principal FMP\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/doacoes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "doacoes"
+              ]
+            },
+            "description": "Cadastra uma doação (validada por Joi e protegida por JWT)."
+          },
+          "response": [
+            {
+              "name": "201 Created - Doação Cadastrada",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"aluno_id\": 2,\n    \"campanha_id\": 1,\n    \"data\": \"2026-11-20\",\n    \"status\": \"Pendente\",\n    \"local_entrega\": \"Recepção Principal FMP\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/doacoes",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "doacoes"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"mensagem\": \"Doação cadastrada com sucesso.\",\n    \"doacao\": {\n        \"id\": 4,\n        \"aluno_id\": 2,\n        \"campanha_id\": 1,\n        \"func_registro_id\": null,\n        \"func_validacao_id\": null,\n        \"data\": \"2026-11-20\",\n        \"status\": \"Pendente\",\n        \"foto_evidencia\": null,\n        \"motivo_reprovacao\": null,\n        \"horas_concedidas\": null,\n        \"horario_doacao\": null,\n        \"retencao_anos\": null,\n        \"local_entrega\": \"Recepção Principal FMP\"\n    }\n}"
+            },
+            {
+              "name": "400 Bad Request - Validação Joi",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"data\": \"data-invalida\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/doacoes",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "doacoes"
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"mensagem\": \"aluno_id é obrigatório.\",\n    \"erros\": [\n        \"aluno_id é obrigatório.\",\n        \"data está em formato inválido.\"\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Atualizar Doação",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"status\": \"Aprovada\",\n    \"horas_concedidas\": 10,\n    \"local_entrega\": \"Coordenação COPER\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/doacoes/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "doacoes",
+                "1"
+              ]
+            },
+            "description": "Atualiza campos da doação (protegida com JWT e validada por Joi)."
+          },
+          "response": [
+            {
+              "name": "200 OK - Doação Atualizada",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"status\": \"Aprovada\",\n    \"horas_concedidas\": 10,\n    \"local_entrega\": \"Coordenação COPER\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/doacoes/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "doacoes",
+                    "1"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"mensagem\": \"Doação atualizada com sucesso.\",\n    \"doacao\": {\n        \"id\": 1,\n        \"aluno_id\": 2,\n        \"campanha_id\": 1,\n        \"data\": \"2026-06-01\",\n        \"status\": \"Aprovada\",\n        \"horas_concedidas\": \"10.00\",\n        \"local_entrega\": \"Coordenação COPER\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Excluir Doação",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/doacoes/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "doacoes",
+                "1"
+              ]
+            },
+            "description": "Remove uma doação pelo ID (protegida com JWT)."
+          },
+          "response": [
+            {
+              "name": "200 OK - Doação Excluída",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/doacoes/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "doacoes",
+                    "1"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"mensagem\": \"Doação excluída com sucesso.\",\n    \"doacao\": {\n        \"id\": 1,\n        \"aluno_id\": 2,\n        \"campanha_id\": 1,\n        \"data\": \"2026-06-01\",\n        \"status\": \"Aprovada\"\n    }\n}"
+            },
+            {
+              "name": "400 Bad Request - Erro de Chave Estrangeira",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/doacoes/1",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "doacoes",
+                    "1"
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"mensagem\": \"Não foi possível excluir: existem registros relacionados a esta doação.\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Campanhas",
+      "item": [
+        {
+          "name": "Listar Campanhas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/campanhas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "campanhas"
+              ]
+            },
+            "description": "Lista todas as campanhas institucionais cadastradas no PostgreSQL (protegida com JWT)."
+          },
+          "response": [
+            {
+              "name": "200 OK - Lista de Campanhas",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/campanhas",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "campanhas"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n    {\n        \"id\": 1,\n        \"titulo\": \"Campanha de Inverno 2026\",\n        \"descricao\": \"Arrecadação de agasalhos e cobertores.\",\n        \"data_limite\": \"2026-08-30\",\n        \"status\": \"Ativa\",\n        \"regras_conversao\": \"1 agasalho/cobertor = 5 horas\",\n        \"limite_horas\": \"40.00\"\n    },\n    {\n        \"id\": 2,\n        \"titulo\": \"SOS Enchentes RS\",\n        \"descricao\": \"Alimentos não perecíveis e água potável.\",\n        \"data_limite\": \"2026-07-15\",\n        \"status\": \"Ativa\",\n        \"regras_conversao\": \"1 kg/item = 2 horas\",\n        \"limite_horas\": \"30.00\"\n    },\n    {\n        \"id\": 3,\n        \"titulo\": \"Material Escolar Solidário\",\n        \"descricao\": \"Kits para o início do ano letivo.\",\n        \"data_limite\": \"2026-03-10\",\n        \"status\": \"Encerrada\",\n        \"regras_conversao\": \"1 kit completo = 10 horas\",\n        \"limite_horas\": \"20.00\"\n    }\n]"
+            },
+            {
+              "name": "401 Unauthorized - Sem Token",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/campanhas",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "campanhas"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"mensagem\": \"Acesso negado. Token de autenticação não informado.\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Catálogo de Itens",
+      "item": [
+        {
+          "name": "Listar Itens para Doação",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/itens",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "itens"
+              ]
+            },
+            "description": "Lista todos os itens aceitos para doação cadastrados no banco de dados (protegida com JWT)."
+          },
+          "response": [
+            {
+              "name": "200 OK - Catálogo de Itens",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/itens",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "itens"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n    {\n        \"id\": 1,\n        \"nome\": \"Cobertor Grosso\",\n        \"categoria\": \"Agasalho\"\n    },\n    {\n        \"id\": 2,\n        \"nome\": \"Casaco de Frio\",\n        \"categoria\": \"Agasalho\"\n    },\n    {\n        \"id\": 3,\n        \"nome\": \"Arroz (Pacote 5kg)\",\n        \"categoria\": \"Alimento\"\n    },\n    {\n        \"id\": 4,\n        \"nome\": \"Água Mineral (Fardo)\",\n        \"categoria\": \"Alimento\"\n    },\n    {\n        \"id\": 5,\n        \"nome\": \"Caderno Universitário\",\n        \"categoria\": \"Material Escolar\"\n    }\n]"
+            },
+            {
+              "name": "401 Unauthorized - Sem Token",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/itens",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "itens"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"mensagem\": \"Acesso negado. Token de autenticação não informado.\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            ""
+          ]
+        },
+        "description": "Verifica se a API está online e conectada ao PostgreSQL."
+      },
+      "response": [
+        {
+          "name": "200 OK - API Online",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                ""
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"mensagem\": \"API do Sistema de Doações FMP conectada ao PostgreSQL.\",\n    \"versao\": \"2.0.0\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Listar Itens",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/itens",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "itens"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ]
 }
