@@ -1,4 +1,4 @@
-const itemModel = require('../models/itemModel');
+const itemModel = require('../models/itemModel.js');
 
 const itemController = {
   async listar(req, res) {
