@@ -3,6 +3,7 @@ const cors = require("cors");
 const authRoutes = require("./routes/authRoutes");
 const doacaoRoutes = require("./routes/doacaoRoutes");
 const campanhaRoutes = require("./routes/campanhaRoutes");
+const itemRoutes = require('./routes/itemRoutes');
 
 const app = express();
 
@@ -34,5 +35,7 @@ app.use("/api/campanhas", campanhaRoutes);
 app.use((_req, res) => {
     res.status(404).json({ mensagem: "Rota não encontrada." });
 });
+
+app.use('/api/itens', itemRoutes);
 
 module.exports = app;
